@@ -13,7 +13,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data		// getter, setter, 생성자 등 생성
+@NoArgsConstructor		// 기본 생성자 필수
+@AllArgsConstructor		// 모든 필드를 포함한 생성자 생성
 @Entity
 @Table(name="point_history")
 public class PointHistory {
