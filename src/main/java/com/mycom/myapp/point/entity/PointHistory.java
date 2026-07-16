@@ -37,7 +37,7 @@ public class PointHistory {
 	
 	@Enumerated(EnumType.STRING)			// DB -> "CHARGE/DEPOSIT_LOCK/DEPOSIT_REFUND/PENALTY/REWARD" 문자열 저장
 	@Column(nullable=false)
-	private PoinType type;
+	private PointType type;
 	
 	@Column(name="balance_after", nullable=false)
 	private int balaceAfter;
