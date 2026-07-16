@@ -15,6 +15,7 @@ import com.mycom.myapp.common.exception.DuplicateVerificationException;
 import com.mycom.myapp.common.exception.EmailAlreadyExistsException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
+import com.mycom.myapp.common.exception.UserNotFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -80,11 +81,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
-    // 404 NOT_FOUND : 챌린지 없음
-    //   (참여/인증글 등 다른 도메인 not-found 예외도 각 담당이 같은 패턴으로 추가 가능)
-    @ExceptionHandler(ChallengeNotFoundException.class)
+    // 404 NOT_FOUND : 존재하지 않는 리소스 조회 (챌린지 없음 / 회원 없음)
+    @ExceptionHandler({ChallengeNotFoundException.class, UserNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleNotFound(
-            ChallengeNotFoundException ex, HttpServletRequest request) {
+            RuntimeException ex, HttpServletRequest request) {
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
