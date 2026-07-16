@@ -29,10 +29,10 @@ public class Challenge {
 	
 	private String title;
 	private String description;
-	private int deposit_amount;
-	private int required_count; 
-	private LocalDate start_date; 
-	private LocalDate end_date; 
+	private int depositAmount;
+	private int requiredCount; 
+	private LocalDate startDate; 
+	private LocalDate endDate; 
 	private String status;
-	private LocalDateTime created_at;
+	private LocalDateTime createdAt;
 }
