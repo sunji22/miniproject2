@@ -8,5 +8,9 @@ import com.mycom.myapp.challenge.entity.Challenge;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
-	List<Challenge> findByStatus(String status);
+	// status 필터링 -> 생성일 순 정렬
+	List<Challenge> findByStatusOrderByCreatedAt(String status);
+	
+	// Title 필터링 -> 생성일 순 정렬
+	List<Challenge> findByTitleOrderByCreatedAt(String status);
 }
