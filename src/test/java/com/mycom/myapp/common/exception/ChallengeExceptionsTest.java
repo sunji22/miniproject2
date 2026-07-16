@@ -62,4 +62,13 @@ class ChallengeExceptionsTest {
                 () -> { throw new EmailAlreadyExistsException("a@test.com"); });
         assertEquals("이미 사용 중인 이메일입니다. email=a@test.com", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("UserNotFound - id 가 포함된 메시지")
+    void userNotFound() {
+        UserNotFoundException ex = assertThrows(
+                UserNotFoundException.class,
+                () -> { throw new UserNotFoundException(7L); });
+        assertEquals("회원을 찾을 수 없습니다. id=7", ex.getMessage());
+    }
 }

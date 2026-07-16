@@ -7,6 +7,7 @@ import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.EmailAlreadyExistsException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
+import com.mycom.myapp.common.exception.UserNotFoundException;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,17 @@ class GlobalExceptionHandlerTest {
         assertEquals(404, res.getBody().getStatus());
         assertEquals("챌린지를 찾을 수 없습니다. id=999", res.getBody().getMessage());
         assertEquals("/api/challenges/999", res.getBody().getPath());
+    }
+
+    @Test
+    @DisplayName("UserNotFoundException -> 404 (회원 없음)")
+    void userNotFound() {
+        ResponseEntity<ErrorResponse> res =
+                handler.handleNotFound(new UserNotFoundException(7L), request);
+
+        assertEquals(HttpStatus.NOT_FOUND, res.getStatusCode());
+        assertEquals(404, res.getBody().getStatus());
+        assertEquals("회원을 찾을 수 없습니다. id=7", res.getBody().getMessage());
     }
 
     @Test
