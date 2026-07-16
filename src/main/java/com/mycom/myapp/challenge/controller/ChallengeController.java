@@ -8,7 +8,7 @@ import com.mycom.myapp.challenge.service.ChallengeService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/challenge")
+@RequestMapping("/api/challenges")
 @RequiredArgsConstructor
 public class ChallengeController {
 

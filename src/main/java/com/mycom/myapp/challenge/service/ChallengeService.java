@@ -1,5 +1,6 @@
 package com.mycom.myapp.challenge.service;
 
-public class ChallengeService {
+public interface ChallengeService {
 
+	
 }

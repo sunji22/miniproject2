@@ -30,7 +30,7 @@ public class Challenge {
 	private String title;
 	private String description;
 	private int depositAmount;
-	private int requiredCount; 
+	private int requiredCount;
 	private LocalDate startDate; 
 	private LocalDate endDate; 
 	private String status;
