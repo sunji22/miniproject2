@@ -56,7 +56,7 @@ public class ControllerTest {
 					.andExpect( status().isOk() )
 					.andExpect( content().contentType(MediaType.APPLICATION_JSON) )
 					.andExpect( jsonPath("$.result").value("success") )
-					.andExpect( jsonPath("$.data").exists() ); 
+					.andExpect( jsonPath("$.data").exists() );
 	}
 	
 	
