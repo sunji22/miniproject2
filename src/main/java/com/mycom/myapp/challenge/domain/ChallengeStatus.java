@@ -19,7 +19,7 @@ public enum ChallengeStatus {
         return this.description;
     }
     
-    // 🎯 Jackson 이 JSON 문자열을 Enum 으로 변환할 때 이 메서드를 강제 가동.
+    // 🎯 Jackson 이 JSON 문자열을 Enum 으로 변환할 때 이 메서드를 강제 실행.
     @JsonCreator 
     public static ChallengeStatus from(String value) {
         return Arrays.stream(ChallengeStatus.values())
