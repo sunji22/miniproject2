@@ -9,11 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.mycom.myapp.challenge.dto.ChallengeDto;
-import com.mycom.myapp.challenge.dto.ChallengeResultDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.common.ResultDto;
+import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,5 +59,23 @@ public class ChallengeServiceImpl implements ChallengeService {
 		});
 		
 		return ResultDto.success(challengeDtoList);
+	}
+
+	@Override
+	public ResultDto<ChallengeDto> detailChallenge(Long id) {
+		Challenge challenge = challengeRepository.findById(id)
+												 .orElseThrow(() -> new ChallengeNotFoundException(id));
+		
+		ChallengeDto challengeDto = ChallengeDto.builder().id(challenge.getId())
+														  .title(challenge.getTitle())
+														  .description(challenge.getDescription())
+														  .depositAmount(challenge.getDepositAmount())
+														  .requiredCount(challenge.getRequiredCount())
+														  .startDate(challenge.getStartDate())
+														  .endDate(challenge.getEndDate())
+														  .status(challenge.getStatus())
+														  .createdAt(challenge.getCreatedAt())
+														  .build();
+		return ResultDto.success(challengeDto);
 	}
 }
