@@ -2,6 +2,9 @@ package com.mycom.myapp.point.entity;
 
 import java.time.LocalDateTime;
 
+import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.user.entity.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
