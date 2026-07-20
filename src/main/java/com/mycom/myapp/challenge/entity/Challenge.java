@@ -3,6 +3,8 @@ package com.mycom.myapp.challenge.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.springframework.data.annotation.CreatedDate;
+
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 
 import jakarta.persistence.Column;
@@ -43,5 +45,8 @@ public class Challenge {
 	@Enumerated(EnumType.STRING)
 	private ChallengeStatus status;
 	
+	// 인서트(save) 쿼리가 생성되기 직전, 자바 레이어에서 자동으로 현재 시간을 주입
+	@CreatedDate
+	@Column(updatable = false, nullable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt;
 }
