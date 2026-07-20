@@ -3,6 +3,7 @@ package com.mycom.myapp.challenge.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,6 +23,7 @@ public class Challenge {
 
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "challenge_id")
 	private Long id;
 	
 //	@ManyToOne(fetch = FetchType.LAZY)
