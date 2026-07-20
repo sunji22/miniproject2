@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.point.entity.PointHistory;
 import com.mycom.myapp.point.entity.PointType;
+import com.mycom.myapp.user.entity.User;
+import com.mycom.myapp.user.repository.UserRepository;
 
 @SpringBootTest							// 전체 애플리케이션 설정 로드해 테스트 환경 구성
 @Transactional							// 테스트 실행 후 데이터 롤백해 DB 상태 깨끗하게 유지
@@ -28,11 +30,13 @@ class PointHistoryRepositoryTest {
 	void findByUser_UserIdOrderByCreatedAtDesc_Test() {
 		// 1. 테스트에 필요한 회원과 이력 데이터 준비
 		User user = new User();
+		user.setEmail("test@test.com");
+		user.setPassword("1234");
 		userRepository.save(user);
 		
-		// 포인트 이력 2건 저장
-		PointHistory h1 = new PointHistory(null, user, null, 1000, PointType.CHARGE, 1000, null);
-		PointHistory h2 = new PointHistory(null, user, null, -500, PointType.WITHDRAW, 500, null);
+		// 포인트 이력 2건 저장  ->  시간 차 부여 시 테스트 성공
+		PointHistory h1 = new PointHistory(null, user, null, 1000, PointType.CHARGE, 1000, java.time.LocalDateTime.now().minusSeconds(2));
+		PointHistory h2 = new PointHistory(null, user, null, -500, PointType.WITHDRAW, 500, java.time.LocalDateTime.now().minusSeconds(1));
 		
 		pointHistoryRepository.save(h1);
 		pointHistoryRepository.save(h2);
