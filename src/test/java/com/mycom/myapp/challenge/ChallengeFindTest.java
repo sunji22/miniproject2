@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
@@ -33,11 +34,11 @@ public class ChallengeFindTest {
 		log.info("목록 조회 테스트");
 		ChallengeSearchConditionDto condition = new ChallengeSearchConditionDto();
 		condition.setTitle("일찍 자기");
-		condition.setStatus("RECRUITING");
+		condition.setStatus(ChallengeStatus.RECRUITING);
 		
 		ResultDto<List<ChallengeDto>> result = challengeServiceImpl.listChallenge(condition);
 		
-		//log.info(result.getData().toString());
+		log.info(result.getData().toString());
 		
 		assertNotNull(challengeServiceImpl);
 		assertNotNull(result);

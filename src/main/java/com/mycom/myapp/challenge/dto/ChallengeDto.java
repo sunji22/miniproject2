@@ -3,6 +3,8 @@ package com.mycom.myapp.challenge.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.mycom.myapp.challenge.domain.ChallengeStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +29,6 @@ public class ChallengeDto {
 	private int requiredCount; 
 	private LocalDate startDate; 
 	private LocalDate endDate; 
-	private String status;		// 등록 시에는 사용 x (Default: 모집중)
-	private LocalDateTime createdAt; //
+	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
+	private LocalDateTime createdAt; 
 }
