@@ -42,11 +42,11 @@ public class Challenge {
 	private LocalDate startDate; 
 	private LocalDate endDate; 
 	
+	@Builder.Default // 🎯 빌더 패턴을 통해 객체를 주조할 때도 아래 기본값을 강제 lock-in
 	@Enumerated(EnumType.STRING)
-	private ChallengeStatus status;
+	private ChallengeStatus status = ChallengeStatus.RECRUITING;
 	
-	// (일단은)직접 주입 x. DB에서 DEFAULT_GENERATED
-	// -> 후에 리팩토링 필요. save 전에 값이 필요한 비즈니스 로직이 필요할 수 있음.
-	@Column(updatable = false) // 생성일 수정 불가
+//	@CreatedDate
+	@Column(updatable = false, nullable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt;
 }

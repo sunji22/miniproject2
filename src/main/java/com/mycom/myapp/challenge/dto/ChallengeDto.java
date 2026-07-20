@@ -62,6 +62,7 @@ public class ChallengeDto {
 									.requiredCount(this.getRequiredCount())
 									.startDate(this.getStartDate())
 									.endDate(this.getEndDate())
+									.createdAt(createdAt)
 					                .build();
     }
 }
