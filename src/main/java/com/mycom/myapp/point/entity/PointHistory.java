@@ -39,7 +39,7 @@ public class PointHistory {
 	private Participation participation;
 	
 	@Column(nullable=false)
-	private int amout;
+	private int amount;
 	
 	@Enumerated(EnumType.STRING)			// DB -> "CHARGE/DEPOSIT_LOCK/DEPOSIT_REFUND/PENALTY/REWARD" 문자열 저장
 	@Column(nullable=false)
