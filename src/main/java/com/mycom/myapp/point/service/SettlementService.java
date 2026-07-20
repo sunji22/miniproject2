@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.UserNotFoundException;
+import com.mycom.myapp.point.entity.PointHistory;
+import com.mycom.myapp.point.entity.PointType;
+import com.mycom.myapp.point.repository.PointHistoryRepository;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
 
@@ -19,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SettlementService {
 	
+	private final Participation participation;
 	private final PointService pointService;			// 포인트 기능 재사용
 	private final UserRepository userRepository;
 	private final PointHistoryRepository pointHistoryRepository;
