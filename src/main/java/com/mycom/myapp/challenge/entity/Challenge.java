@@ -45,8 +45,8 @@ public class Challenge {
 	@Enumerated(EnumType.STRING)
 	private ChallengeStatus status;
 	
-	// 인서트(save) 쿼리가 생성되기 직전, 자바 레이어에서 자동으로 현재 시간을 주입
-	@CreatedDate
-	@Column(updatable = false, nullable = false) // 생성일 수정 불가
+	// (일단은)직접 주입 x. DB에서 DEFAULT_GENERATED
+	// -> 후에 리팩토링 필요. save 전에 값이 필요한 비즈니스 로직이 필요할 수 있음.
+	@Column(updatable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt;
 }
