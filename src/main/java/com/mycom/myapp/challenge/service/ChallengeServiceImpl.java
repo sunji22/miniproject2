@@ -43,39 +43,38 @@ public class ChallengeServiceImpl implements ChallengeService {
 		List<ChallengeDto> challengeDtoList = new ArrayList<>();
 		
 		// page -> List
-		page.toList().forEach( c -> {
-			ChallengeDto dto = ChallengeDto.builder().id(c.getId())
-													  .title(c.getTitle())
-													  .description(c.getDescription())
-													  .depositAmount(c.getDepositAmount())
-													  .requiredCount(c.getRequiredCount())
-													  .startDate(c.getStartDate())
-													  .endDate(c.getEndDate())
-													  .status(c.getStatus())
-													  .createdAt(c.getCreatedAt())
-													  .build();
-								  
-			challengeDtoList.add(dto);
+		page.toList().forEach( challenge -> {
+			challengeDtoList.add(ChallengeDto.from(challenge));
 		});
 		
 		return ResultDto.success(challengeDtoList);
 	}
 
+	// 상세 조회
 	@Override
 	public ResultDto<ChallengeDto> detailChallenge(Long id) {
 		Challenge challenge = challengeRepository.findById(id)
 												 .orElseThrow(() -> new ChallengeNotFoundException(id));
+		ChallengeDto challengeDto = ChallengeDto.from(challenge);
 		
-		ChallengeDto challengeDto = ChallengeDto.builder().id(challenge.getId())
-														  .title(challenge.getTitle())
-														  .description(challenge.getDescription())
-														  .depositAmount(challenge.getDepositAmount())
-														  .requiredCount(challenge.getRequiredCount())
-														  .startDate(challenge.getStartDate())
-														  .endDate(challenge.getEndDate())
-														  .status(challenge.getStatus())
-														  .createdAt(challenge.getCreatedAt())
-														  .build();
 		return ResultDto.success(challengeDto);
+	}
+
+	@Override
+	public ResultDto<Long> insertChallenge(ChallengeDto challengeDto) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultDto<Long> updateChallenge(ChallengeDto challengeDto) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ResultDto<Void> deleteChallenge(Long id) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

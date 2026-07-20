@@ -13,4 +13,13 @@ public interface ChallengeService {
 	
 	// 상세
 	ResultDto<ChallengeDto> detailChallenge(Long id);
+	
+	// 등록
+	ResultDto<Long> insertChallenge(ChallengeDto challengeDto);
+	
+	// 수정
+	ResultDto<Long> updateChallenge(ChallengeDto challengeDto);
+	
+	// 삭제
+	ResultDto<Void> deleteChallenge(Long id);
 }
