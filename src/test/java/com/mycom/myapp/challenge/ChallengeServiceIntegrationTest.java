@@ -39,8 +39,8 @@ public class ChallengeServiceIntegrationTest {
 												.build();
 		
 		Challenge challenge = challengeDto.toEntity();
-		log.info("status={}", challengeDto.getStatus());
-		log.info("status={}", challenge.getStatus());	// default 값 확인
+		log.info("status={}", challengeDto.getStatus());// dto 는 null
+		log.info("status={}", challenge.getStatus());	// default 값 RECRUITING 확인
 		
 		ResultDto<Long> result = challengeService.insertChallenge(challengeDto);
 		
@@ -51,4 +51,6 @@ public class ChallengeServiceIntegrationTest {
 		assertEquals(ChallengeStatus.RECRUITING, challenge.getStatus());
 		
 	}
+	
+	
 }

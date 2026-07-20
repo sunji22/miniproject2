@@ -62,23 +62,34 @@ public class ChallengeServiceImpl implements ChallengeService {
 		return ResultDto.success(challengeDto);
 	}
 
+	// 챌린지 개설자는 바로 참여하게 되므로
+	// (챌린지 등록) + (참여 등록) 트랜잭션 필요
 	@Override
 	@Transactional
 	public ResultDto<Long> insertChallenge(ChallengeDto challengeDto) {
 		// required_count 가 전체 기간보다 큰 경우 -> 예외 추가 필요
 
-		challengeDto.setCreatedAt(LocalDateTime.now());
+		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity());
 		
-		// 이후 챌린지 등록 시 참여 테이블 등록까지 트랜잭션으로
+		// 참여 테이블에 등록 로직 추가
 		
 		return ResultDto.success(challenge.getId());
 	}
 
 	@Override
+	@Transactional
 	public ResultDto<Long> updateChallenge(ChallengeDto challengeDto) {
-		// TODO Auto-generated method stub
-		return null;
+		// required_count 가 전체 기간보다 큰 경우 -> 예외 추가 필요
+		
+		// 해당 요청자가 원래의 작성자(host_id)가 맞는지 검증 필요
+
+		// 이미 진행 중인 챌린지는 수정 불가. 검증 필요
+		
+		
+		Challenge challenge = challengeRepository.save(challengeDto.toEntity());
+		
+		return ResultDto.success(challenge.getId());
 	}
 
 	@Override

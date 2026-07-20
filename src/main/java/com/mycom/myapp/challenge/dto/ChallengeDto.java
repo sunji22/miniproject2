@@ -55,14 +55,15 @@ public class ChallengeDto {
 	
 	// 🎯 DTO -> Entity 변환: 인스턴스 메서드 (toEntity)
     public Challenge toEntity() {
-        return Challenge.builder().title(this.title)
-					                .description(this.getDescription())
-					                .depositAmount(this.depositAmount)
-									.depositAmount(this.getDepositAmount())
-									.requiredCount(this.getRequiredCount())
-									.startDate(this.getStartDate())
-									.endDate(this.getEndDate())
-									.createdAt(createdAt)
-					                .build();
+        return Challenge.builder().id(this.getId())
+        						.title(this.title)
+				                .description(this.getDescription())
+				                .depositAmount(this.depositAmount)
+								.depositAmount(this.getDepositAmount())
+								.requiredCount(this.getRequiredCount())
+								.startDate(this.getStartDate())
+								.endDate(this.getEndDate())
+								.createdAt(createdAt)
+				                .build();
     }
 }
