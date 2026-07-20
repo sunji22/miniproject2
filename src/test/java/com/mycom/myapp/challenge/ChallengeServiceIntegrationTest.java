@@ -52,5 +52,9 @@ public class ChallengeServiceIntegrationTest {
 		
 	}
 	
-	
+	@Test
+	@Transactional
+	void 업데이트_테스트() {
+		
+	}
 }
