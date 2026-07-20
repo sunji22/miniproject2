@@ -13,6 +13,7 @@ import com.mycom.myapp.challenge.dto.ChallengeResultDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
+import com.mycom.myapp.common.ResultDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +27,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
 	// 우선 status 필터링만
 	@Override
-	public ChallengeResultDto listChallenge(ChallengeSearchConditionDto conditionDto) {
-		ChallengeResultDto challengeResultDto = new ChallengeResultDto();
+	public ResultDto<List<ChallengeDto>> listChallenge(ChallengeSearchConditionDto conditionDto) {
 		
 		Pageable pageable = PageRequest.of(conditionDto.getPage(), conditionDto.getSize());
 		Page<Challenge> page = null;
@@ -58,6 +58,6 @@ public class ChallengeServiceImpl implements ChallengeService {
 			challengeDtoList.add(dto);
 		});
 		
-		return challengeResultDto;
+		return ResultDto.success(challengeDtoList);
 	}
 }
