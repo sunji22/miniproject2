@@ -28,7 +28,7 @@ public class PointHistory {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="point_history_id")
-	private Long pointHistoryid;
+	private Long pointHistoryId;
 	
 	@ManyToOne(fetch=FetchType.LAZY)		// 포인트 이력 조회 많을 수 있기 때문에 지연 로딩 처리
 	@JoinColumn(name="user_id", nullable=false)
@@ -46,7 +46,7 @@ public class PointHistory {
 	private PointType type;
 	
 	@Column(name="balance_after", nullable=false)
-	private int balaceAfter;
+	private int balanceAfter;
 	
 	@Column(name="created_at", nullable=false, updatable=false)
 	private LocalDateTime createdAt = LocalDateTime.now();
