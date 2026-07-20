@@ -3,8 +3,12 @@ package com.mycom.myapp.challenge.dto;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import org.springframework.data.annotation.CreatedDate;
 
+import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.challenge.entity.Challenge;
+
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,5 +34,35 @@ public class ChallengeDto {
 	private LocalDate startDate; 
 	private LocalDate endDate; 
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
+	
+	// 인서트(save) 쿼리가 생성되기 직전, 자바 레이어에서 자동으로 현재 시간을 주입
+	@CreatedDate
+	@Column(updatable = false, nullable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt; 
+	
+	// 🎯 Entity -> DTO 변환: 정적 팩토리 메서드 (from)
+	public static ChallengeDto from(Challenge challenge) {
+		return ChallengeDto.builder().id(challenge.getId())
+									  .title(challenge.getTitle())
+									  .description(challenge.getDescription())
+									  .depositAmount(challenge.getDepositAmount())
+									  .requiredCount(challenge.getRequiredCount())
+									  .startDate(challenge.getStartDate())
+									  .endDate(challenge.getEndDate())
+									  .status(challenge.getStatus())
+									  .createdAt(challenge.getCreatedAt())
+									  .build();
+	}
+	
+	// 🎯 DTO -> Entity 변환: 인스턴스 메서드 (toEntity)
+    public Challenge toEntity() {
+        return Challenge.builder().title(this.title)
+					                .description(this.getDescription())
+					                .depositAmount(this.depositAmount)
+									.depositAmount(this.getDepositAmount())
+									.requiredCount(this.getRequiredCount())
+									.startDate(this.getStartDate())
+									.endDate(this.getEndDate())
+					                .build();
+    }
 }
