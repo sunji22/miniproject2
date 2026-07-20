@@ -43,11 +43,20 @@ public class ChallengeServiceImpl implements ChallengeService {
 		List<ChallengeDto> challengeDtoList = new ArrayList<>();
 		
 		// page -> List
-//		page.toList().forEach( c -> {
-//			challengeDtoList.add(
-//					ChallengeDto.builder().id(c.getId())
-//			);
-//		});
+		page.toList().forEach( c -> {
+			ChallengeDto dto = ChallengeDto.builder().id(c.getId())
+													  .title(c.getTitle())
+													  .description(c.getDescription())
+													  .depositAmount(c.getDepositAmount())
+													  .requiredCount(c.getRequiredCount())
+													  .startDate(c.getStartDate())
+													  .endDate(c.getEndDate())
+													  .status(c.getStatus())
+													  .createdAt(c.getCreatedAt())
+													  .build();
+								  
+			challengeDtoList.add(dto);
+		});
 		
 		return challengeResultDto;
 	}

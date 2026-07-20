@@ -19,7 +19,7 @@ public class ChallengeDto {
 
 	private Long id;			// 등록 시에는 사용 x (Auto Increment)
 	
-	private Long hostId;
+//	private Long hostId;		// User 엔티티 추가 후
 	
 	private String title;
 	private String description; // 상세 조회 시에만 사용
