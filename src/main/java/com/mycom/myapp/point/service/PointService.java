@@ -1,14 +1,16 @@
-그러면 마지막 point.service 패키지의 PointService.java 코드야
 package com.mycom.myapp.point.service;
+
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
 import com.mycom.myapp.common.exception.InsufficientPointException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
-import com.mycom.myapp.user;
 import com.mycom.myapp.point.entity.PointHistory;
 import com.mycom.myapp.point.entity.PointType;
 import com.mycom.myapp.point.repository.PointHistoryRepository;
+import com.mycom.myapp.user.entity.User;
+import com.mycom.myapp.user.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +40,13 @@ public class PointService {
 		
 		// 4. 포인트 이력 저장
 		PointHistory history = new PointHistory(
+				null,
 				user,
 				null,			// 충전은 참여 내역에 없기 때문에 null
 				amount,
 				PointType.CHARGE,
-				user.getPointBalance()
+				user.getPointBalance(),
+				LocalDateTime.now()
 		);
 		pointHistoryRepository.save(history);
 		
@@ -72,7 +76,7 @@ public class PointService {
 		
 		user.setPointBalance(user.getPointBalance() - amount);					// 잠금 (차감)
 		
-		PointHistory history = new PointHistory(user, null, amount, PointType.DEPOSIT_LOCK, user.getPointBalance());
+		PointHistory history = new PointHistory(null, user, null, amount, PointType.DEPOSIT_LOCK, user.getPointBalance(), LocalDateTime.now());
 		pointHistoryRepository.save(history);
 	}
 	
@@ -91,7 +95,7 @@ public class PointService {
 		// 차감 로직 구현
 		user.setPointBalance(user.getPointBalance() - amount);
 		
-		PointHistory history = new PointHistory(user, null, amount, PointType.WITHDRAW, user.getPointBalance());
+		PointHistory history = new PointHistory(null, user, null, amount, PointType.WITHDRAW, user.getPointBalance(), LocalDateTime.now());
 		pointHistoryRepository.save(history);
 	}
 }
