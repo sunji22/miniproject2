@@ -9,7 +9,7 @@ import com.mycom.myapp.common.ResultDto;
 public interface ChallengeService {
 
 	// 목록
-	ResultDto<List<ChallengeDto>> listChallenge(ChallengeSearchConditionDto conditionDto);
+	ResultDto<List<ChallengeDto>> listChallenge(ChallengeSearchConditionDto searchCondition);
 	
 	// 상세
 	ResultDto<ChallengeDto> detailChallenge(Long id);

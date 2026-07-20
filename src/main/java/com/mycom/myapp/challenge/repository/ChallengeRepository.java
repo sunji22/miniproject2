@@ -1,7 +1,6 @@
 package com.mycom.myapp.challenge.repository;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,4 +16,5 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 	
 	// Title 필터링 -> 생성일 순 정렬
 	List<Challenge> findByTitleOrderByCreatedAt(ChallengeStatus status, Pageable pageable);
+	
 }
