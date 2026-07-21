@@ -53,7 +53,7 @@ public class ChallengeDto {
 		return ChallengeDto.builder().id(challenge.getId())
 				// .getId() 추가 쿼리 없음 (N+1 발생 x)
 				// User 프록시 객체가 host_id 를 갖고있기 때문
-				.hostId(challenge.getHost() != null ? challenge.getHost().getId() : null)
+				.hostId(challenge.getHost() != null ? challenge.getHost().getUserId() : null)
 									  .title(challenge.getTitle())
 									  .description(challenge.getDescription())
 									  .depositAmount(challenge.getDepositAmount())
