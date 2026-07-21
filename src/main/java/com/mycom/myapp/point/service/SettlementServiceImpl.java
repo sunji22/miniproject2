@@ -51,8 +51,8 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 4. 각 참여자한테 보증금 전액 몰수
 		for (Participation participation : participants) {
-			User user = userRepository.findById(participation.getUser().getId())
-					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getId()));
+			User user = userRepository.findById(participation.getUser().getUserId())
+					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getUserId()));
 
 			int deposit = challenge.getDepositAmount();
 			user.setPointBalance(user.getPointBalance() - deposit);
