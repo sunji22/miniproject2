@@ -88,7 +88,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		
-		// 참여 테이블에 등록 로직 추가 필요
+		// 참여 테이블에 등록 트랜잭션 필요
 		// ...
 		
 		return ResultDto.success(challenge.getId());
