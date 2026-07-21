@@ -9,6 +9,9 @@ import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 
 import jakarta.persistence.Column;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,11 +30,17 @@ public class ChallengeDto {
 	
 //	private Long hostId;		// User 엔티티 추가 필요
 	
+	@NotBlank(message = "제목은 필수입니다.")
 	private String title;
 	private String description; // 상세 조회 시에만 사용
 	private int depositAmount;
+	
+	@Min(value = 1, message = "최소 인정 횟수는 1회 이상이어야 합니다.")
 	private int requiredCount; 
+	
+	@NotBlank(message = "시작일은 필수입니다.")
 	private LocalDate startDate; 
+	@NotBlank(message = "종료일은 필수입니다.")
 	private LocalDate endDate; 
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
 	
