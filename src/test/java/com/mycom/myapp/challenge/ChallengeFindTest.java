@@ -52,7 +52,7 @@ public class ChallengeFindTest {
 	private ChallengeController controller;
 	
 	@Test
-	void 목록조회_테스트_service() {
+	void 목록조회_service_테스트() {
 		log.info("목록 조회 테스트");
 		ChallengeSearchConditionDto condition = new ChallengeSearchConditionDto();
 		condition.setTitle("일찍 자기");
@@ -61,14 +61,16 @@ public class ChallengeFindTest {
 		ResultDto<List<ChallengeDto>> result = challengeService.listChallenge(condition);
 		
 		log.info(result.getData().toString());
+		log.info("페이징 개수={}", result.getData().size());
 		
 		assertNotNull(challengeService);
 		assertNotNull(result);
 		assertEquals("success", result.getResult());
+		assertEquals(10, result.getData().size());
 	}
 	
 	@Test
-	void 상세조회_테스트_service() {
+	void 상세조회_service_테스트() {
 		log.info("상세 조회 테스트");
 		
 		Challenge entity = challengeRepository.findById(41L).get();
@@ -101,7 +103,7 @@ public class ChallengeFindTest {
 	
 	@Test
 	@WithMockUser
-	void 목록조회_통합_테스트() throws Exception {
+	void 목록조회_Controller_테스트() throws Exception {
 		
 		// RECRUITING -> Enum 으로 DB 조회까지 잘 되었는지.
         this.mockMvc.perform(get("/api/challenges")
@@ -117,7 +119,7 @@ public class ChallengeFindTest {
 	
 	@Test
 	@WithMockUser
-	void 상세조회_통합_테스트() throws Exception {
+	void 상세조회_Controller_테스트() throws Exception {
 		// given
 		Long id = 12L;
 		
