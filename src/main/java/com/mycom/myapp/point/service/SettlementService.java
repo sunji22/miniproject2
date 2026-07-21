@@ -1,12 +1,17 @@
 package com.mycom.myapp.point.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
+import com.mycom.myapp.common.exception.ChallengeNotFoundException;
+import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.point.entity.PointHistory;
 import com.mycom.myapp.point.entity.PointType;
@@ -22,11 +27,51 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SettlementService {
 	
-	private final Participation participation;
 	private final PointService pointService;			// 포인트 기능 재사용
 	private final UserRepository userRepository;
 	private final PointHistoryRepository pointHistoryRepository;
+	private final ChallengeRepository challengeRepository;
 	private final ParticipationRepository participationRepository;
+	
+	// #0. 전원 실패 시
+	@Transactional
+	public void penaltyAll(Long challengeId) {
+		// 1. 챌린지 조회
+		Challenge challenge = challengeRepository.findById(challengeId)
+				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
+		
+		// 2. 이미 정산된 챌린지 인지 확인
+		if("CLOSED".equals(challenge.getStatus())) {
+			throw new SettlementAlreadyDoneException(challengeId);
+		}
+		
+		// 3. 참여자 목록 조회
+		List<Participation> participants = participationRepository.findByChallenge_ChallengeId(challengeId);
+		
+		// 4. 각 참여자한테 보증금 전액 몰수
+		for (Participation participation : participants) {
+			User user = userRepository.findById(participation.getUser().getUserId())
+					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getUserId()));
+			
+			int deposit = challenge.getDepositAmount();
+			user.setPointBalance(user.getPointBalance() - deposit);
+			
+			PointHistory history = new PointHistory(
+					null,
+					user,
+					participation,						// 참여 정보 연결
+					deposit,
+					PointType.PENALTY,
+					user.getPointBalance(),
+					LocalDateTime.now()
+			);
+			pointHistoryRepository.save(history);
+		}
+		
+		// 5. 챌린지 상태 CLOSED 변경
+		challenge.setStatus("CLOSED");
+		challengeRepository.save(challenge);
+	}
 	
 	// #1. 환불 처리 (DEPOSIT_REFUND)
 	@Transactional
@@ -88,11 +133,26 @@ public class SettlementService {
 		pointHistoryRepository.save(history);
 		
 		log.info("몰수 처리 완료 : userId = {}, amount = {}", userId, amount);
+		
+		// 5. 챌린지 상태 CLOSED 변경
+		challenge.setStatus("CLOSED");
+		challengeRepository.save(challenge);
 	}
 	
 	// #3. 분배 처리 (REWARD)
 	@Transactional
 	public void reward(Long userId, Long participationId, int totalPenaltyAmount, int successCount) {
+		
+		// 0. 챌린지 상태 확인
+		Participation participation = participationRepository.findById(participationId)
+				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+		
+		Challenge challenge = participation.getChallenge();
+		
+		// 챌린지 상태가 이미 CLOSED 라면 정산 불가
+		if ("CLOSED".equals(challenge.getStatus())) {
+			throw new SettlementAlreadyDoneException(challenge.getId());
+		}
 		
 		// 1. 1인당 분배 금액 계산 ( 소수점 버림 등 정책에 따라 조절 )
 		int rewardAmount = totalPenaltyAmount / successCount;
@@ -102,7 +162,7 @@ public class SettlementService {
 				.orElseThrow(() -> new UserNotFoundException(userId));
 		
 		// 3. 유저 잔액 갱신
-		user.setPointBalance(user.getPointBalance() - rewardAmount);
+		user.setPointBalance(user.getPointBalance() + rewardAmount);
 		
 		// 4. 포인트 이력 저장
 		PointHistory history = new PointHistory(
@@ -117,5 +177,9 @@ public class SettlementService {
 		pointHistoryRepository.save(history);
 		
 		log.info("분배 처리 완료 : userId = {}, 지급액 = {}", userId, rewardAmount);
+		
+		// 5. 챌린지 상태 CLOSED 변경
+		challenge.setStatus("CLOSED");
+		challengeRepository.save(challenge);
 	}
 }
