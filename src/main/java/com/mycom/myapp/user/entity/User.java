@@ -28,7 +28,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    private Long id;
+    private Long userId;   // getter=getUserId()
 
     // unique=true 를 걸어두면 ddl-auto 가 유니크 제약을 생성/검증
     @Column(nullable = false, length = 100, unique = true)

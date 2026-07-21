@@ -37,7 +37,7 @@ public class MyUserDetailsService implements UserDetailsService {
                     .username(user.getEmail())   // Security 계약 필드(= email)
                     .password(user.getPassword())// Security 계약 필드(BCrypt 해시)
                     .authorities(authorities)    // Security 계약 필드
-                    .id(user.getId())
+                    .id(user.getUserId())
                     .name(user.getName())
                     .email(user.getEmail())
                     .build();

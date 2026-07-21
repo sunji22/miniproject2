@@ -23,7 +23,7 @@ public class UserResponse {
     // User 엔티티 -> 응답 DTO
     public static UserResponse fromEntity(User user) {
         return UserResponse.builder()
-                .id(user.getId())
+                .id(user.getUserId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole())
