@@ -6,11 +6,13 @@ import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -19,12 +21,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Setter
 public class Challenge {
 
 	@Id
@@ -32,8 +36,8 @@ public class Challenge {
 	@Column(name = "challenge_id")
 	private Long id;
 	
-//	@ManyToOne(fetch = FetchType.LAZY)
-//	private User host;
+	@ManyToOne(fetch = FetchType.EAGER)
+	private User host;
 	
 	private String title;
 	private String description;
