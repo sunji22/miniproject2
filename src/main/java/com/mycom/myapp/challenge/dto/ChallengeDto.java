@@ -38,9 +38,9 @@ public class ChallengeDto {
 	@Min(value = 1, message = "최소 인정 횟수는 1회 이상이어야 합니다.")
 	private int requiredCount; 
 	
-	@NotBlank(message = "시작일은 필수입니다.")
+	@NotNull(message = "시작일은 필수입니다.")
 	private LocalDate startDate; 
-	@NotBlank(message = "종료일은 필수입니다.")
+	@NotNull(message = "종료일은 필수입니다.")
 	private LocalDate endDate; 
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
 	
