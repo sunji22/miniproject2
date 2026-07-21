@@ -28,7 +28,7 @@ public class ChallengeDto {
 
 	private Long id;			// 등록 시에는 사용 x (Auto Increment)
 	
-//	private Long hostId;		// User 엔티티 추가 필요
+	private Long hostId;		// User 엔티티 추가 필요
 	
 	@NotBlank(message = "제목은 필수입니다.")
 	private String title;
@@ -44,8 +44,7 @@ public class ChallengeDto {
 	private LocalDate endDate; 
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
 	
-	// (일단은)직접 주입 x. DB에서 DEFAULT_GENERATED
-	// -> 후에 리팩토링 필요. save 전에 값이 필요한 비즈니스 로직이 필요할 수 있음.
+	// (일단은) Service 에서 현재시각 주입 -> 리팩토링 필요할듯
 	private LocalDateTime createdAt; 
 	
 	// 🎯 Entity -> DTO 변환: 정적 팩토리 메서드 (from)
