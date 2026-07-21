@@ -111,13 +111,13 @@ public class JwtUtil {
         }
     }
 
-    // DB 2차 검증: 토큰의 username 으로 최신 UserDetails 를 DB 에서 조회해 Authentication 생성.
-    // (탈퇴/권한변경이 즉시 반영됨 - 방식 2, 비관적 검증)
+    // DB 2차 검증
+    // 토큰의 username 으로 최신 UserDetails 를 DB 에서 조회해 Authentication 생성
     public UsernamePasswordAuthenticationToken getAuthentication(String token) {
         UserDetails userDetails = myUserDetailsService.loadUserByUsername(getUsernameFromToken(token));
         return new UsernamePasswordAuthenticationToken(
                 userDetails.getUsername(),
-                "",                          // 자격증명(비밀번호)은 이미 검증됨 → 비움
+                "",
                 userDetails.getAuthorities());
     }
 }

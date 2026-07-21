@@ -63,7 +63,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 // 미인증 요청 → 401 ErrorResponse.
                 .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(entryPoint))
-                // JWT 검증 필터를 기본 폼로그인 필터 앞에 배치(우리가 직접 만든 필터).
+                // JWT 검증 필터를 기본 폼로그인 필터 앞에 배치(직접 만든 필터)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

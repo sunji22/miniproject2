@@ -29,10 +29,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // #요청에서 JWT 추출(없으면 null)
+        // 요청에서 JWT 추출(없으면 null)
         String token = jwtUtil.getTokenFromHeader(request);
 
-        // #서명/만료 검증 토큰 없으면 검증 생략
+        // 서명/만료 검증 토큰 없으면 검증 생략
         Claims claims = (token != null) ? jwtUtil.validateToken(token) : null;
 
         //  유효 토큰이면 DB 2차 검증 후 인증정보 주입
