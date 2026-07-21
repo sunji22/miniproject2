@@ -107,6 +107,8 @@ public class SettlementService {
 	// #2. 몰수 처리 (PENALTY)
 	@Transactional
 	public void penalty(Long userId, Long participationId, int amount) {
+		
+		
 		log.info("몰수 처리 시작 : userId = {}, paritipaitonId = {}, amount = {}", userId, participationId, amount);
 		
 		// 1. 유저 조회
@@ -117,10 +119,13 @@ public class SettlementService {
 		Participation participation = participationRepository.findById(participationId)
 				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
 		
-		// 3. 유저 잔액 갱신
+		// 3. 참여 정보 불러오기
+		Challenge challenge = participation.getChallenge();
+		
+		// 4. 유저 잔액 갱신
 		user.setPointBalance(user.getPointBalance() - amount);
 		
-		// 4. 포인트 이력 저장 (PENALTY 타입)
+		// 5. 포인트 이력 저장 (PENALTY 타입)
 		PointHistory history = new PointHistory(
 				null,
 				user,
