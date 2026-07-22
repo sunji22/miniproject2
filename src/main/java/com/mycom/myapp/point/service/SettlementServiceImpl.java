@@ -3,10 +3,12 @@ package com.mycom.myapp.point.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
@@ -190,6 +192,58 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 5. 챌린지 상태 CLOSED 변경
 		challenge.setStatus(ChallengeStatus.CLOSED);
+		challengeRepository.save(challenge);
+	}
+
+	// #4. 챌린지 정산(settleChallenge)
+	@Override
+	public void settleChallenge(Long challengeId, Long hostId) {
+		// 1. 챌린지 조회
+		Challenge challenge = challengeRepository.findById(challengeId)
+				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
+		
+		// 2. 호스트 본인 확인
+		if(!challenge.getHost().getUserId().equals(hostId)) {
+			throw new AccessDeniedException("호스트만 정산할 수 있습니다.");
+		}
+		
+		// 3. 이미 정산된 챌린지인지 확인
+		if(challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
+			throw new SettlementAlreadyDoneException(challengeId);
+		}
+		
+		// 4. 참여자 목록 조회
+		List<Participation> participants = participationRepository.findByChallenge_Id(challengeId);
+		
+		// 5. 성공자 / 실패자 판정
+		int successCount = 0;
+		int totalPenaltyAmount = 0;
+		
+		for(Participation p : participants) {
+			if(p.getSuccessCount() >= challenge.getRequiredCount()) {
+				successCount++;												// 성공자 수 카운트
+			} else {
+				totalPenaltyAmount += challenge.getDepositAmount();			// 실패자 보증금 누적
+			}
+		}
+		
+		// 6. 정산 처리
+		if(successCount == 0) {
+			penaltyAll(challengeId);
+		} else {
+			for (Participation p : participants) {
+				if(p.getSuccessCount() >= challenge.getRequiredCount()) {
+					refund(p.getUser().getUserId(), p.getId(), challenge.getDepositAmount());
+					reward(p.getUser().getUserId(), p.getId(), totalPenaltyAmount, successCount);
+				} else {
+					penalty(p.getUser().getUserId(), p.getId(), challenge.getDepositAmount());
+				}
+			}
+		}
+		
+		// 7. 챌린지 상태 변경
+		challenge.setStatus(ChallengeStatus.CLOSED);
+		challenge.setSettlementStatus(SettlementStatus.SETTLED);
 		challengeRepository.save(challenge);
 	}
 }

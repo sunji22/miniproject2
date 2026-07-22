@@ -9,4 +9,6 @@ public interface SettlementService {
 	void penalty(Long userId, Long participationId, int amount);
 
 	void reward(Long userId, Long participationId, int totalPenaltyAmount, int successCount);
+	
+	void settleChallenge(Long challengeId, Long hostId);
 }
