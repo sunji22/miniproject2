@@ -3,6 +3,7 @@ package com.mycom.myapp.jwt;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -67,6 +68,7 @@ public class JwtUtil {
     public String createRefreshToken(String username) {
         Date now = new Date();
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())  // jti : 고유값
                 .subject(username)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + refreshTokenValidMs))
@@ -115,8 +117,10 @@ public class JwtUtil {
     // 토큰의 username 으로 최신 UserDetails 를 DB 에서 조회해 Authentication 생성
     public UsernamePasswordAuthenticationToken getAuthentication(String token) {
         UserDetails userDetails = myUserDetailsService.loadUserByUsername(getUsernameFromToken(token));
+        // principal 로 email(String) 이 아니라 MyUserDetails 객체 자체 넣음
+        // -> 컨트롤러에서 @AuthenticationPrincipal MyUserDetails me 로 받아 me.getId()(userId) 등에 접근 가능
         return new UsernamePasswordAuthenticationToken(
-                userDetails.getUsername(),
+                userDetails,
                 "",
                 userDetails.getAuthorities());
     }
