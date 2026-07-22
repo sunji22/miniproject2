@@ -10,5 +10,7 @@ public interface SettlementService {
 
 	void reward(Long userId, Long participationId, int totalPenaltyAmount, int successCount);
 	
-	void settleChallenge(Long challengeId, Long hostId);
+	void settleChallenge(Long challengeId, Long hostId);		// 정산 실행 메서드 추가
+	
+	int getSettlementAmount(Long challengeId);					// 정산 결과 조회 메서드 추가
 }
