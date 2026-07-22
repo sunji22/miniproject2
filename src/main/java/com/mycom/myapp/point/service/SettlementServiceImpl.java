@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
@@ -42,7 +43,7 @@ public class SettlementServiceImpl implements SettlementService {
 				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
 
 		// 2. 이미 정산된 챌린지 인지 확인
-		if("CLOSED".equals(challenge.getStatus())) {
+		if (challenge.getStatus() == ChallengeStatus.CLOSED) {
 			throw new SettlementAlreadyDoneException(challengeId);
 		}
 
@@ -51,8 +52,8 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 4. 각 참여자한테 보증금 전액 몰수
 		for (Participation participation : participants) {
-			User user = userRepository.findById(participation.getUser().getId())
-					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getId()));
+			User user = userRepository.findById(participation.getUser().getUserId())
+					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getUserId()));
 
 			int deposit = challenge.getDepositAmount();
 			user.setPointBalance(user.getPointBalance() - deposit);
@@ -70,7 +71,7 @@ public class SettlementServiceImpl implements SettlementService {
 		}
 
 		// 5. 챌린지 상태 CLOSED 변경
-		challenge.setStatus("CLOSED");
+		challenge.setStatus(ChallengeStatus.CLOSED);
 		challengeRepository.save(challenge);
 	}
 
@@ -143,7 +144,7 @@ public class SettlementServiceImpl implements SettlementService {
 		log.info("몰수 처리 완료 : userId = {}, amount = {}", userId, amount);
 
 		// 5. 챌린지 상태 CLOSED 변경
-		challenge.setStatus("CLOSED");
+		challenge.setStatus(ChallengeStatus.CLOSED);
 		challengeRepository.save(challenge);
 	}
 
@@ -159,7 +160,7 @@ public class SettlementServiceImpl implements SettlementService {
 		Challenge challenge = participation.getChallenge();
 
 		// 챌린지 상태가 이미 CLOSED 라면 정산 불가
-		if ("CLOSED".equals(challenge.getStatus())) {
+		if (challenge.getStatus() == ChallengeStatus.CLOSED) {
 			throw new SettlementAlreadyDoneException(challenge.getId());
 		}
 
@@ -188,7 +189,7 @@ public class SettlementServiceImpl implements SettlementService {
 		log.info("분배 처리 완료 : userId = {}, 지급액 = {}", userId, rewardAmount);
 
 		// 5. 챌린지 상태 CLOSED 변경
-		challenge.setStatus("CLOSED");
+		challenge.setStatus(ChallengeStatus.CLOSED);
 		challengeRepository.save(challenge);
 	}
 }
