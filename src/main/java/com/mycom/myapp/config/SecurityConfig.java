@@ -17,20 +17,20 @@ import com.mycom.myapp.jwt.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 
-// Spring Security 설정. JWT 기반 STATELESS 인증.
+// Spring Security 설정
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
 
-    // 비밀번호 해시. 회원가입 시 인코딩, 로그인 시 매칭에 사용.
+    // 회원가입 시 인코딩, 로그인 시 매칭에 사용
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 로그인(LoginService)에서 인증을 위임할 AuthenticationManager 를 빈으로 노출.
+    // 로그인(LoginService)에서 인증을 위임할 AuthenticationManager 를 빈으로 노출
     @Bean
     AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
@@ -42,26 +42,28 @@ public class SecurityConfig {
             MyAuthenticationEntryPoint entryPoint) throws Exception {
 
         return http
-                // JWT 방식 → 폼로그인/basic/csrf/세션 전부 비활성.
+                // JWT 방식 -> 폼로그인/basic/csrf/세션 전부 비활성.
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 인가 규칙.
+                // 인가 규칙
                 .authorizeHttpRequests(request -> request
-                        // 정적 리소스/랜딩 - 로그인 없이 접근.
+                        // 정적 리소스/랜딩 - 로그인 없이 접근
                         .requestMatchers("/", "/index.html", "/assets/**", "/.well-known/**").permitAll()
-                        // 로그인/토큰 재발급 등 인증 엔드포인트.
+                        // Swagger UI / OpenAPI 문서 - 로그인 없이 접근(팀 API 테스트)
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        // 로그인/토큰 재발급 등 인증 엔드포인트
                         .requestMatchers("/api/auth/**").permitAll()
-                        // 회원가입.
+                        // 회원가입
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                        // 챌린지 공개 조회(GET).
+                        // 챌린지 공개 조회(GET)
                         .requestMatchers(HttpMethod.GET, "/api/challenges/**").permitAll()
-                        // 관리자 전용.
+                        // 관리자 전용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        // 그 외 전부 인증 필요.
+                        // 그 외 전부 인증 필요
                         .anyRequest().authenticated())
-                // 미인증 요청 → 401 ErrorResponse.
+                // 미인증 요청 -> 401
                 .exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(entryPoint))
                 // JWT 검증 필터를 기본 폼로그인 필터 앞에 배치(직접 만든 필터)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
