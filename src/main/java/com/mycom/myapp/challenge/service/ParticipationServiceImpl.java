@@ -7,7 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
+import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
@@ -23,9 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ParticipationServiceImpl implements ParticipationService{
 
-	private final ParticipationRepository parciParticipationRepository;
-	private final UserRepository userRepository; // -> 이후 Service 를 주입받도록 개선 필요
-	private final ChallengeService challengeService;
+	private final ParticipationRepository ParticipationRepository;
+	private final UserRepository userRepository; // -> 이후 Service 를 주입받도록 개선 필요 ?
+	private final ChallengeRepository challengeRepository; // 순환참조 때문에 직접 주입받도록 수정
 	private final PointService pointService;
 	
 	// 등록 = 챌린지 참여
@@ -33,15 +35,16 @@ public class ParticipationServiceImpl implements ParticipationService{
 	@Transactional
 	public Long participate(Long challengeId, Long userId) {
 		// [중복 참여 1차 방어]
-		if(parciParticipationRepository.existsByChallenge_IdAndUser_UserId(challengeId, userId)) {
-			log.warn("[참여 실패] 중복 참여 - challengeId: {}, userId: {}", challengeId, userId);
+		if(ParticipationRepository.existsByChallenge_IdAndUser_UserId(challengeId, userId)) {
+			log.warn("[참여 실패] 중복 참여1 - challengeId: {}, userId: {}", challengeId, userId);
 			throw new DuplicateParticipationException();
 		}
 		
 		// 조회 & 영속화
 		User user = userRepository.findById(userId)
 						.orElseThrow(() -> new UserNotFoundException(userId));
-		Challenge challenge = challengeService.getValidChallenge(challengeId);
+		Challenge challenge = challengeRepository.findById(challengeId)
+						.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
 		
 		// [Challenge 모집 상태 검증]: 모집중 상태만 참여 가능
 		if(challenge.getStatus() != ChallengeStatus.RECRUITING) {
@@ -66,11 +69,12 @@ public class ParticipationServiceImpl implements ParticipationService{
 		Participation participation = Participation.createParticipation(user, challenge);
 		// [중복 참여 2차 방어]
 		try {			
-			parciParticipationRepository.save(participation);
+			ParticipationRepository.save(participation);
 		// 찰나에 2번 참여하기 하면 DB에 insert 가 2번 도착한다.
 		// 2번째 insert 시에 UNIQUE 제약조건에 의해 DataIntegrityViolationException 발생
 		} catch (DataIntegrityViolationException e) {
-			log.warn("[참여 실패] 중복 참여 - challengeId: {}, userId: {}", challengeId, userId);
+//			log.warn("[참여 실패] 중복 참여2 - challengeId: {}, userId: {}", challengeId, userId);
+			log.error("[DB ERROR DETAILED REASON] ", e.getRootCause());
 			throw new DuplicateParticipationException();
 		}
 		
