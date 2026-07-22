@@ -246,4 +246,12 @@ public class SettlementServiceImpl implements SettlementService {
 		challenge.setSettlementStatus(SettlementStatus.SETTLED);
 		challengeRepository.save(challenge);
 	}
+	
+	// #5. 챌린지별 정산 금액 조회
+	@Override
+	public int getSettlementAmount(Long challengeId) {
+		List<PointType> types = List.of(PointType.PENALTY, PointType.REWARD, PointType.DEPOSIT_REFUND);
+		Integer amount = pointHistoryRepository.sumAmountByParticipation_Challenge_IdAndTypeIn(challengeId, types);
+		return (amount != null) ? amount : 0;
+	}
 }
