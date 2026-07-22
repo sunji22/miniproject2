@@ -3,9 +3,8 @@ package com.mycom.myapp.challenge.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.CreatedDate;
-
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -51,6 +50,11 @@ public class Challenge {
 	@Builder.Default // 🎯 빌더 패턴을 통해 객체를 주조할 때도 아래 기본값을 강제 lock-in
 	@Enumerated(EnumType.STRING)
 	private ChallengeStatus status = ChallengeStatus.RECRUITING;
+	
+	@Builder.Default
+	@Enumerated(EnumType.STRING)
+	@Column(name = "settlement_status", nullable = false)
+	private SettlementStatus settlementStatus = SettlementStatus.PENDING;
 	
 //	@CreatedDate
 	@Column(updatable = false, nullable = false) // 생성일 수정 불가
