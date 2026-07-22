@@ -63,6 +63,7 @@ public class SettlementServiceTest {
 		testUser.setName("홍길동");
 		testUser.setRole(Role.USER);
 		testUser.setPointBalance(10000);
+		testUser.setCreatedAt(LocalDateTime.now());
 		user = userRepository.save(testUser);
 
 		// 챌린지 생성 (보증금 3000) - enum 타입 사용 + settlementStatus 추가
@@ -83,7 +84,7 @@ public class SettlementServiceTest {
 
 		// 참여 생성 (상태 : JOINED)
 		participation = participationRepository.save(
-				new Participation(null, challenge, user, 0, ParticipationStatus.JOINED, null)
+		        new Participation(null, challenge, user, 0, ParticipationStatus.JOINED, LocalDateTime.now())
 		);
 	}
 
