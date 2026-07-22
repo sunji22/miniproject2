@@ -3,6 +3,8 @@ package com.mycom.myapp.point.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.mycom.myapp.point.entity.PointHistory;
@@ -16,5 +18,14 @@ public interface PointHistoryRepository extends JpaRepository<PointHistory, Long
 	List<PointHistory> findByUser_UserIdOrderByCreatedAtDesc(Long userId);
 	
 	// 챌린지별 정산 금액 합계 조회
-	Integer sumAmountByParticipation_Challenge_IdAndTypeIn(Long challengeId, List<PointType> types);
+	@Query("""
+			SELECT SUM(ph.amount) 
+			  FROM PointHistory ph 
+			 WHERE ph.participation.challenge.id = :challengeId 
+			   AND ph.type IN :types
+			""")
+	Integer sumAmountByParticipation_Challenge_IdAndTypeIn(
+            @Param("challengeId") Long challengeId, 
+            @Param("types") List<PointType> types
+    );
 }
