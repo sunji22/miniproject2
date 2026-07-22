@@ -14,7 +14,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LoginResponse {
 
-    private String accessToken; // 발급된 JWT access 토큰
+    private String accessToken;  // 발급된 JWT access 토큰
+    private String refreshToken; // 발급된 JWT refresh 토큰
     private String email;
     private String name;
     private Role role;
