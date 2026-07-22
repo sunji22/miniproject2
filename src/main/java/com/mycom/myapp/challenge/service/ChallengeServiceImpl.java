@@ -18,6 +18,9 @@ import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.common.ResultDto;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
+import com.mycom.myapp.common.exception.UserNotFoundException;
+import com.mycom.myapp.user.entity.User;
+import com.mycom.myapp.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
+	private final UserRepository userRepository;
 
 	// 우선 status 필터링만
 	@Override
@@ -71,11 +75,20 @@ public class ChallengeServiceImpl implements ChallengeService {
 	public ResultDto<Long> insertChallenge(ChallengeDto challengeDto) {
 		
 		// required_count 가 전체 기간보다 큰 경우 -> 예외 추가 필요
+//		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
+//		if(challengeDto.getRequiredCount() > totalDays) {
+//			throw new Exception();
+//		}
 
-		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
-		Challenge challenge = challengeRepository.save(challengeDto.toEntity());
+		// dto -> 엔티티 위해서 영속화된 User 엔티티 필욧
+		Long userId = challengeDto.getHostId();
+		User user = userRepository.findById(userId)
+						.orElseThrow(() -> new UserNotFoundException(userId));
 		
-		// 참여 테이블에 등록 로직 추가 필요
+		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
+		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
+		
+		// 참여 테이블에 등록 트랜잭션 필요
 		// ...
 		
 		return ResultDto.success(challenge.getId());
@@ -93,7 +106,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 		Challenge existing = challengeRepository
 								.findById(challengeDto.getId())
 								.orElseThrow(() -> new ChallengeNotFoundException(challengeDto.getId()));
-		// (검증1)
+
+		// (검증1) 최소인증횟수 검증
 //		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
 //		if(challengeDto.getRequiredCount() > totalDays) {
 //			throw new Exception();
@@ -111,8 +125,13 @@ public class ChallengeServiceImpl implements ChallengeService {
 //			throw new Exception();
 //		}
 		
+		// 검증 끝난 후 User 엔티티 영속화
+		Long userId = challengeDto.getHostId();
+		User user = userRepository.findById(userId)
+						.orElseThrow(() -> new UserNotFoundException(userId));
+		
 		log.info("업데이트 전: {}", existing.getTitle());
-		Challenge challenge = challengeRepository.save(challengeDto.toEntity());
+		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		log.info("업데이트 후: {}", existing.getTitle());
 				
 		return ResultDto.success(challenge.getId());
@@ -122,6 +141,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 	@Transactional
 	public ResultDto<Void> deleteChallenge(Long id) {
 		// 검증 : 진행중 챌린지 삭제 불가
+		
 		Challenge existing = challengeRepository
 								.findById(id)
 								.orElseThrow(() -> new ChallengeNotFoundException(id));

@@ -7,6 +7,7 @@ import org.springframework.data.annotation.CreatedDate;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
+import com.mycom.myapp.user.entity.User;
 
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Min;
@@ -50,6 +51,9 @@ public class ChallengeDto {
 	// 🎯 Entity -> DTO 변환: 정적 팩토리 메서드 (from)
 	public static ChallengeDto from(Challenge challenge) {
 		return ChallengeDto.builder().id(challenge.getId())
+				// .getId() 추가 쿼리 없음 (N+1 발생 x)
+				// User 프록시 객체가 host_id 를 갖고있기 때문
+				.hostId(challenge.getHost() != null ? challenge.getHost().getUserId() : null)
 									  .title(challenge.getTitle())
 									  .description(challenge.getDescription())
 									  .depositAmount(challenge.getDepositAmount())
@@ -62,8 +66,9 @@ public class ChallengeDto {
 	}
 	
 	// 🎯 DTO -> Entity 변환: 인스턴스 메서드 (toEntity)
-    public Challenge toEntity() {
+    public Challenge toEntity(User user) {
         return Challenge.builder().id(this.getId())
+        						.host(user)
         						.title(this.title)
 				                .description(this.getDescription())
 				                .depositAmount(this.depositAmount)

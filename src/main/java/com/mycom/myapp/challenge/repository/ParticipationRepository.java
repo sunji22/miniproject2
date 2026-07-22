@@ -11,11 +11,11 @@ import com.mycom.myapp.challenge.entity.Participation;
 @Repository
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {
 
-    Optional<Participation> findByChallenge_IdAndUser_Id(Long challengeId, Long userId);
+    Optional<Participation> findByChallenge_IdAndUser_UserId(Long challengeId, Long userId);
 
-    List<Participation> findByUser_Id(Long userId);
+    List<Participation> findByUser_UserId(Long userId);
     
     List<Participation> findByChallenge_Id(Long challengeId);
 
-    boolean existsByChallenge_IdAndUser_Id(Long challengeId, Long userId);
+    boolean existsByChallenge_IdAndUser_UserId(Long challengeId, Long userId);
 }
