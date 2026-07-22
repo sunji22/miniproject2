@@ -62,7 +62,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 	@Override
 	public ResultDto<ChallengeDto> detailChallenge(Long id) {
 		Challenge challenge = challengeRepository.findById(id)
-												 .orElseThrow(() -> new ChallengeNotFoundException(id));
+									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
 		
 		return ResultDto.success(challengeDto);
@@ -155,5 +155,12 @@ public class ChallengeServiceImpl implements ChallengeService {
 		challengeRepository.delete(existing);
 		
 		return ResultDto.success();
+	}
+	
+	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
+	public Challenge getValidChallenge(Long id) {
+		Challenge challenge = challengeRepository.findById(id)
+				.orElseThrow(() -> new ChallengeNotFoundException(id));
+		return challenge;
 	}
 }

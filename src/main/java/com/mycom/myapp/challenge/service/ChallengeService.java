@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
+import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.common.ResultDto;
 
 public interface ChallengeService {
@@ -22,4 +23,7 @@ public interface ChallengeService {
 	
 	// 삭제
 	ResultDto<Void> deleteChallenge(Long id);
+	
+	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
+	public Challenge getValidChallenge(Long id);
 }
