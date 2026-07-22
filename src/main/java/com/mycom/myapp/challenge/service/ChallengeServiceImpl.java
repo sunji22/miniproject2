@@ -31,7 +31,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
-	private final UserRepository userRepository;
+	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기
+	
+	private final ParticipationService participationService;
 
 	// 우선 status 필터링만
 	@Override
@@ -75,21 +77,23 @@ public class ChallengeServiceImpl implements ChallengeService {
 	public ResultDto<Long> insertChallenge(ChallengeDto challengeDto) {
 		
 		// required_count 가 전체 기간보다 큰 경우 -> 예외 추가 필요
-//		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
-//		if(challengeDto.getRequiredCount() > totalDays) {
-//			throw new Exception();
-//		}
+		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
+		if(challengeDto.getRequiredCount() > totalDays) {
+			// 비즈니스 예외 추가 필요
+			throw new RuntimeException();
+		}
 
-		// dto -> 엔티티 위해서 영속화된 User 엔티티 필욧
+		// dto -> 엔티티 변환하기 위해서 영속화된 User 엔티티 필욧
 		Long userId = challengeDto.getHostId();
+		Long challengeId = challengeDto.getId();
 		User user = userRepository.findById(userId)
 						.orElseThrow(() -> new UserNotFoundException(userId));
 		
 		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		
-		// 참여 테이블에 등록 트랜잭션 필요
-		// ...
+		// 챌린지 개설할 때, 주최자는 자동 참여 트랜잭션
+		participationService.participate(challengeId, userId);
 		
 		return ResultDto.success(challenge.getId());
 	}
