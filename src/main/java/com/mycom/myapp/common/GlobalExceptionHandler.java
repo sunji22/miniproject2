@@ -15,6 +15,7 @@ import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.DuplicateVerificationException;
 import com.mycom.myapp.common.exception.EmailAlreadyExistsException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
+import com.mycom.myapp.common.exception.InvalidRefreshTokenException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 
@@ -74,6 +75,23 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
                 .message("이메일 또는 비밀번호가 올바르지 않습니다.")
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    // 401 UNAUTHORIZED : refresh 토큰 재발급 실패 (무효/만료/불일치)
+    // AuthenticationException 이 아닌 별도 RuntimeException 이므로 전용 핸들러로 401 매핑
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRefreshToken(
+            InvalidRefreshTokenException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
+                .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
 
