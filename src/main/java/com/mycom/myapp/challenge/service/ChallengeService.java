@@ -10,19 +10,19 @@ import com.mycom.myapp.common.ResultDto;
 public interface ChallengeService {
 
 	// 목록
-	ResultDto<List<ChallengeDto>> listChallenge(ChallengeSearchConditionDto searchCondition);
+	List<ChallengeDto> listChallenge(ChallengeSearchConditionDto searchCondition);
 	
 	// 상세
-	ResultDto<ChallengeDto> detailChallenge(Long id);
+	ChallengeDto detailChallenge(Long id);
 	
 	// 등록
-	ResultDto<Long> insertChallenge(ChallengeDto challengeDto);
+	Long insertChallenge(ChallengeDto challengeDto, Long userId);
 	
 	// 수정
-	ResultDto<Long> updateChallenge(ChallengeDto challengeDto);
+	Long updateChallenge(ChallengeDto challengeDto, Long userId);
 	
 	// 삭제
-	ResultDto<Void> deleteChallenge(Long id);
+	void deleteChallenge(Long challengeId, Long userId);
 	
 	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
 	public Challenge getValidChallenge(Long id);
