@@ -80,7 +80,7 @@ public class SettlementController {
 	@PostMapping("/settle/{challengeId}")
 	public ResultDto<Void> settle(
 			HttpServletRequest request,
-			@PathVariable Long challengeId){
+			@PathVariable("challengeId") Long challengeId){
 		Long userId = getCurrentUserId(request);
 		settlementService.settleChallenge(challengeId, userId);
 		return ResultDto.success();
@@ -90,7 +90,7 @@ public class SettlementController {
 	@GetMapping("/result/{challengeId}")
 	public ResultDto<SettlementResultResponseDto> getResult(
 			HttpServletRequest request,
-			@PathVariable Long challengeId){
+			@PathVariable("challengeId") Long challengeId){
 		Long userId = getCurrentUserId(request);
 		
 		User user = userRepository.findById(userId)
