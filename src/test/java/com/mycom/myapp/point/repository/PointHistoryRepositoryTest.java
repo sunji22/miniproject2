@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.point.entity.PointHistory;
 import com.mycom.myapp.point.entity.PointType;
+import com.mycom.myapp.user.entity.Role;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
 
@@ -32,6 +33,7 @@ class PointHistoryRepositoryTest {
 		User user = new User();
 		user.setEmail("test@test.com");
 		user.setPassword("1234");
+		user.setRole(Role.USER);
 		userRepository.save(user);
 		
 		// 포인트 이력 2건 저장  ->  시간 차 부여 시 테스트 성공

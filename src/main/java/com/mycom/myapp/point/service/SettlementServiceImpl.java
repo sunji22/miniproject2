@@ -3,10 +3,12 @@ package com.mycom.myapp.point.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
@@ -42,8 +44,8 @@ public class SettlementServiceImpl implements SettlementService {
 		Challenge challenge = challengeRepository.findById(challengeId)
 				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
 
-		// 2. 이미 정산된 챌린지 인지 확인
-		if (challenge.getStatus() == ChallengeStatus.CLOSED) {
+		// 2. 이미 정산된 챌린지 인지 확인 (중복 정산 방지)
+		if (challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
 			throw new SettlementAlreadyDoneException(challengeId);
 		}
 
@@ -69,10 +71,6 @@ public class SettlementServiceImpl implements SettlementService {
 			);
 			pointHistoryRepository.save(history);
 		}
-
-		// 5. 챌린지 상태 CLOSED 변경
-		challenge.setStatus(ChallengeStatus.CLOSED);
-		challengeRepository.save(challenge);
 	}
 
 	@Override
@@ -88,11 +86,17 @@ public class SettlementServiceImpl implements SettlementService {
 		// 2. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
 				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+		
+		// 3. 정산 여부 확인 (중복 정산 방지)
+		Challenge challenge = participation.getChallenge();
+		if(challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
+			throw new SettlementAlreadyDoneException(challenge.getId());
+		}
 
-		// 3. 유저 잔액 갱신
+		// 4. 유저 잔액 갱신
 		user.setPointBalance(user.getPointBalance() + amount);
 
-		// 4. 포인트 이력 저장 (DEPOSIT_REFUND 타입)
+		// 5. 포인트 이력 저장 (DEPOSIT_REFUND 타입)
 		PointHistory history = new PointHistory(
 				null,
 				user,
@@ -123,8 +127,11 @@ public class SettlementServiceImpl implements SettlementService {
 		Participation participation = participationRepository.findById(participationId)
 				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
 
-		// 3. 참여 정보 불러오기
+		// 3. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
+		if(challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
+			throw new SettlementAlreadyDoneException(challenge.getId());
+		}
 
 		// 4. 유저 잔액 갱신
 		user.setPointBalance(user.getPointBalance() - amount);
@@ -142,10 +149,6 @@ public class SettlementServiceImpl implements SettlementService {
 		pointHistoryRepository.save(history);
 
 		log.info("몰수 처리 완료 : userId = {}, amount = {}", userId, amount);
-
-		// 5. 챌린지 상태 CLOSED 변경
-		challenge.setStatus(ChallengeStatus.CLOSED);
-		challengeRepository.save(challenge);
 	}
 
 	@Override
@@ -153,28 +156,27 @@ public class SettlementServiceImpl implements SettlementService {
 	@Transactional
 	public void reward(Long userId, Long participationId, int totalPenaltyAmount, int successCount) {
 
-		// 0. 챌린지 상태 확인
+		// 1. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
 				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
 
+		// 2. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
-
-		// 챌린지 상태가 이미 CLOSED 라면 정산 불가
-		if (challenge.getStatus() == ChallengeStatus.CLOSED) {
+		if (challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
 			throw new SettlementAlreadyDoneException(challenge.getId());
 		}
 
-		// 1. 1인당 분배 금액 계산 ( 소수점 버림 등 정책에 따라 조절 )
+		// 3. 1인당 분배 금액 계산 ( 소수점 버림 등 정책에 따라 조절 )
 		int rewardAmount = totalPenaltyAmount / successCount;
 
-		// 2. 유저 조회
+		// 4. 유저 조회
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
 
-		// 3. 유저 잔액 갱신
+		// 5. 유저 잔액 갱신
 		user.setPointBalance(user.getPointBalance() + rewardAmount);
 
-		// 4. 포인트 이력 저장
+		// 6. 포인트 이력 저장
 		PointHistory history = new PointHistory(
 				null,
 				user,
@@ -187,9 +189,64 @@ public class SettlementServiceImpl implements SettlementService {
 		pointHistoryRepository.save(history);
 
 		log.info("분배 처리 완료 : userId = {}, 지급액 = {}", userId, rewardAmount);
+	}
 
-		// 5. 챌린지 상태 CLOSED 변경
+	// #4. 챌린지 정산(settleChallenge)
+	@Override
+	public void settleChallenge(Long challengeId, Long hostId) {
+		// 1. 챌린지 조회
+		Challenge challenge = challengeRepository.findById(challengeId)
+				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
+		
+		// 2. 호스트 본인 확인
+		if(!challenge.getHost().getUserId().equals(hostId)) {
+			throw new AccessDeniedException("호스트만 정산할 수 있습니다.");
+		}
+		
+		// 3. 이미 정산된 챌린지인지 확인 (중복 정산 방지)
+		if(challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
+			throw new SettlementAlreadyDoneException(challengeId);
+		}
+		
+		// 4. 참여자 목록 조회
+		List<Participation> participants = participationRepository.findByChallenge_Id(challengeId);
+		
+		// 5. 성공자 / 실패자 판정
+		int successCount = 0;
+		int totalPenaltyAmount = 0;
+		
+		for(Participation p : participants) {
+			if(p.getSuccessCount() >= challenge.getRequiredCount()) {
+				successCount++;												// 성공자 수 카운트
+			} else {
+				totalPenaltyAmount += challenge.getDepositAmount();			// 실패자 보증금 누적
+			}
+		}
+		
+		// 6. 정산 처리
+		if(successCount == 0) {
+			penaltyAll(challengeId);
+		} else {
+			for (Participation p : participants) {
+				if(p.getSuccessCount() >= challenge.getRequiredCount()) {
+					refund(p.getUser().getUserId(), p.getId(), challenge.getDepositAmount());
+					reward(p.getUser().getUserId(), p.getId(), totalPenaltyAmount, successCount);
+				} else {
+					penalty(p.getUser().getUserId(), p.getId(), challenge.getDepositAmount());
+				}
+			}
+		}
+		// #5. 챌린지 상태 변경 ( 각 정산을 통해 상태 변경 -> 한 번만 선언) 중복 제거
 		challenge.setStatus(ChallengeStatus.CLOSED);
+		challenge.setSettlementStatus(SettlementStatus.SETTLED);
 		challengeRepository.save(challenge);
+	}
+	
+	// #6. 챌린지별 정산 금액 조회
+	@Override
+	public int getSettlementAmount(Long challengeId) {
+		List<PointType> types = List.of(PointType.PENALTY, PointType.REWARD, PointType.DEPOSIT_REFUND);
+		Integer amount = pointHistoryRepository.sumAmountByParticipation_Challenge_IdAndTypeIn(challengeId, types);
+		return (amount != null) ? amount : 0;
 	}
 }

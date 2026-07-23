@@ -8,6 +8,6 @@ import lombok.Data;
 public class SettlementResultResponseDto {
 	private Long userId;
 	private Long challengeId;
-	private int amout;
+	private int amount;
 	private int balanceAfter;
 }
