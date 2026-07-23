@@ -37,7 +37,7 @@ public class SettlementServiceImpl implements SettlementService {
 	private final ParticipationRepository participationRepository;
 
 	@Override
-	// #0. 전원 실패 시
+	// #0. 전원 실패 시 (penatly-all)
 	@Transactional
 	public void penaltyAll(Long challengeId) {
 		// 1. 챌린지 조회
@@ -58,7 +58,6 @@ public class SettlementServiceImpl implements SettlementService {
 					.orElseThrow(() -> new UserNotFoundException(participation.getUser().getUserId()));
 
 			int deposit = challenge.getDepositAmount();
-			user.setPointBalance(user.getPointBalance() - deposit);
 
 			PointHistory history = new PointHistory(
 					null,
@@ -133,10 +132,8 @@ public class SettlementServiceImpl implements SettlementService {
 			throw new SettlementAlreadyDoneException(challenge.getId());
 		}
 
-		// 4. 유저 잔액 갱신
-		user.setPointBalance(user.getPointBalance() - amount);
 
-		// 5. 포인트 이력 저장 (PENALTY 타입)
+		// 4. 포인트 이력 저장 (PENALTY 타입)
 		PointHistory history = new PointHistory(
 				null,
 				user,
