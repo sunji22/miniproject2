@@ -51,4 +51,15 @@ public class Participation {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    // 객체 생성 팩토리 메서드 -> 캡슐화
+    // user 와 challenge 는 영속화 상태
+    public static Participation createParticipation(User user, Challenge challenge) {
+    	Participation participation = new Participation();
+    	
+    	participation.setUser(user);
+    	participation.setChallenge(challenge);
+    	
+    	return participation;
+    }
 }

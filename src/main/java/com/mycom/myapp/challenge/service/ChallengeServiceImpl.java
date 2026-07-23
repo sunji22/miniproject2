@@ -31,7 +31,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
-	private final UserRepository userRepository;
+	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기
+	
+	private final ParticipationService participationService;
 
 	// 우선 status 필터링만
 	@Override
@@ -62,34 +64,34 @@ public class ChallengeServiceImpl implements ChallengeService {
 	@Override
 	public ResultDto<ChallengeDto> detailChallenge(Long id) {
 		Challenge challenge = challengeRepository.findById(id)
-												 .orElseThrow(() -> new ChallengeNotFoundException(id));
+									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
 		
 		return ResultDto.success(challengeDto);
 	}
 
-	// 챌린지 개설자는 바로 참여하게 되므로
-	// (챌린지 등록) + (참여 등록) 트랜잭션 필요
 	@Override
 	@Transactional
 	public ResultDto<Long> insertChallenge(ChallengeDto challengeDto) {
 		
 		// required_count 가 전체 기간보다 큰 경우 -> 예외 추가 필요
-//		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
-//		if(challengeDto.getRequiredCount() > totalDays) {
-//			throw new Exception();
-//		}
+		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
+		if(challengeDto.getRequiredCount() > totalDays) {
+			// 비즈니스 예외 추가 필요
+			throw new RuntimeException();
+		}
 
-		// dto -> 엔티티 위해서 영속화된 User 엔티티 필욧
+		// dto -> 엔티티 변환하기 위해서 영속화된 User 엔티티 필욧
 		Long userId = challengeDto.getHostId();
+		Long challengeId = challengeDto.getId();
 		User user = userRepository.findById(userId)
 						.orElseThrow(() -> new UserNotFoundException(userId));
 		
 		challengeDto.setCreatedAt(LocalDateTime.now()); // -> 리팩토링 필요할듯
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		
-		// 참여 테이블에 등록 트랜잭션 필요
-		// ...
+		// 챌린지 개설자는 개설과 동시에 바로 참여
+		participationService.participate(challengeId, userId);
 		
 		return ResultDto.success(challenge.getId());
 	}
@@ -108,22 +110,22 @@ public class ChallengeServiceImpl implements ChallengeService {
 								.orElseThrow(() -> new ChallengeNotFoundException(challengeDto.getId()));
 
 		// (검증1) 최소인증횟수 검증
-//		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
-//		if(challengeDto.getRequiredCount() > totalDays) {
-//			throw new Exception();
-//		}
+		long totalDays = ChronoUnit.DAYS.between(challengeDto.getStartDate(), challengeDto.getEndDate()) + 1;
+		if(challengeDto.getRequiredCount() > totalDays) {
+			throw new RuntimeException();
+		}
 		
-		// (검증2) 요청자 검증
-//		Long requesterId = existing.getHost().getId(); // User 엔티티 필요
-//		if(!challengeDto.getHostId().equals(requesterId)) {
-//			throw new Exception();
-//		}
+		// (검증2) 요청자=작성자 검증
+		Long requesterId = existing.getHost().getUserId(); // User 엔티티 필요
+		if(!challengeDto.getHostId().equals(requesterId)) {
+			throw new RuntimeException();
+		}
 		
 		// (검증3) 이미 진행 중인 챌린지
-//		ChallengeStatus status = existing.getStatus();
-//		if(status != ChallengeStatus.RECRUITING) {
-//			throw new Exception();
-//		}
+		ChallengeStatus status = existing.getStatus();
+		if(status != ChallengeStatus.RECRUITING) {
+			throw new RuntimeException();
+		}
 		
 		// 검증 끝난 후 User 엔티티 영속화
 		Long userId = challengeDto.getHostId();
@@ -141,12 +143,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 	@Transactional
 	public ResultDto<Void> deleteChallenge(Long id) {
 		// 검증 : 진행중 챌린지 삭제 불가
-		
 		Challenge existing = challengeRepository
 								.findById(id)
 								.orElseThrow(() -> new ChallengeNotFoundException(id));
 		if(existing.getStatus() == ChallengeStatus.ONGOING) {
-			// throw
+			throw new RuntimeException();
 		}
 		
 		// 삭제 시 필요한 추가적인 비즈니스 로직
@@ -155,5 +156,12 @@ public class ChallengeServiceImpl implements ChallengeService {
 		challengeRepository.delete(existing);
 		
 		return ResultDto.success();
+	}
+	
+	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
+	public Challenge getValidChallenge(Long id) {
+		Challenge challenge = challengeRepository.findById(id)
+				.orElseThrow(() -> new ChallengeNotFoundException(id));
+		return challenge;
 	}
 }
