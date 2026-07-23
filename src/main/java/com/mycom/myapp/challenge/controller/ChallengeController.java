@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
@@ -20,11 +19,13 @@ import com.mycom.myapp.challenge.dto.ParticipantResponseDto;
 import com.mycom.myapp.challenge.service.ChallengeService;
 import com.mycom.myapp.challenge.service.ParticipationService;
 import com.mycom.myapp.common.ResultDto;
-import com.mycom.myapp.config.MyUserDetails;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+@Tag(name = "챌린지 API", description = "챌린지 C.R.U.D 및 참여 관련 API 목록")
 @RestController
 @RequestMapping("/api/challenges")
 @RequiredArgsConstructor
@@ -33,6 +34,10 @@ public class ChallengeController {
 	private final ChallengeService challengeService;
 	private final ParticipationService participationService;
 	
+	@Operation	(
+        summary = "챌린지 목록 조회",
+        description = "전체 챌린지 목록 시간순 조회. 상태 필터링 조회"
+	)
 	@GetMapping
 	public ResultDto<List<ChallengeDto>> listChallenge(
 			ChallengeSearchConditionDto searchCondition) {
@@ -41,6 +46,7 @@ public class ChallengeController {
 		return ResultDto.success(challengeList);
 	}
 	
+	@Operation(summary = "챌린지 상세 조회")
 	@GetMapping("/{id}")
 	public ResultDto<ChallengeDto> detailChallenge(@PathVariable("id") Long id) {
 		ChallengeDto challengeDto = challengeService.detailChallenge(id);
@@ -48,51 +54,43 @@ public class ChallengeController {
 	}
 	
 	// 챌린지 개설: 인증 필수
+	@Operation(
+		summary = "챌린지 개설하기",
+		description = "개설자는 자동 참여한다."
+	)
 	@PostMapping
 	public ResultDto<Long> insertChallenge(
 				@Valid @RequestBody ChallengeDto challengeDto,
-				@AuthenticationPrincipal Object principal
+				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
 		
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-	    }
-		
-		Long savedId = challengeService.insertChallenge(challengeDto, userDetails.getId());
+		Long savedId = challengeService.insertChallenge(challengeDto, userId);
 		
 		return ResultDto.success(savedId);
 	}
 
 	// 챌린지 수정: 인증 필수
+	@Operation(summary = "챌린지 수정하기")
 	@PutMapping
 	public ResultDto<Long> updateChallenge(
 				@Valid @RequestBody ChallengeDto challengeDto,
-				@AuthenticationPrincipal Object principal
+				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
-
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-		}
 		
-		Long savedId = challengeService.updateChallenge(challengeDto, userDetails.getId());
+		Long savedId = challengeService.updateChallenge(challengeDto, userId);
 		
 		return ResultDto.success(savedId);
 	}
 	
 	// 챌린지 삭제: 인증 필수
+	@Operation(summary = "챌린지 삭제하기")
 	@DeleteMapping("/{id}")
 	public ResultDto<Void> deleteChallenge(
 				@PathVariable("id") Long challengeId,
-				@AuthenticationPrincipal Object principal
+				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-	    }
 		
-		challengeService.deleteChallenge(challengeId, userDetails.getId());
+		challengeService.deleteChallenge(challengeId, userId);
 		
 		return ResultDto.success();
 	}
@@ -101,33 +99,26 @@ public class ChallengeController {
 	//////////////  챌린지 참여 - 전부 인증 필수 ////////////////
 	
 	// data = 참여 챌린지 id
+	@Operation(summary = "챌린지 참여하기")
 	@PostMapping("/{id}/participations")
 	public ResultDto<Long> participate(
 				@PathVariable("id") Long challengeId,
 				// SecurityContextHolder 에서 MyUserDetails 의 id 만 추출
 				// MyUserDetails 의 getter 이름이랑 expression 문자열이 대응해야 함.
-				@AuthenticationPrincipal Object principal
+				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-	    }
 		
-		Long savedId = participationService.participate(challengeId, userDetails.getId());
+		Long savedId = participationService.participate(challengeId, userId);
 		
 		return ResultDto.success(savedId);
 	}
 	
 	// 특정 챌린지 참여자 목록 조회
+	@Operation(summary = "특정 챌린지 참여자 목록 조회")
 	@GetMapping("/{id}/participations")
 	public ResultDto<List<ParticipantResponseDto>> listParticipant(
-				@PathVariable("id") Long challengeId,
-				@AuthenticationPrincipal Object principal
+				@PathVariable("id") Long challengeId
 			) {
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-	    }
 		
 		List<ParticipantResponseDto> data = participationService.listParticipant(challengeId);
 		
@@ -135,16 +126,13 @@ public class ChallengeController {
 	}
 	
 	// 특정 사용자의 참여 챌린지 목록 조회
+	@Operation(summary = "특정 사용자의 참여 챌린지 목록 조회")
 	@GetMapping("/my/participations")
 	public ResultDto<List<ParticipantResponseDto>> listMyParticipation(
-				@AuthenticationPrincipal Object principal
+				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
-		// 인증 여부 검증
-		if (!(principal instanceof MyUserDetails userDetails)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요한 서비스입니다.");
-	    }
 		
-		List<ParticipantResponseDto> data = participationService.listParticipant(userDetails.getId());
+		List<ParticipantResponseDto> data = participationService.listParticipant(userId);
 		
 		return ResultDto.success(data);
 	}
