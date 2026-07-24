@@ -71,16 +71,15 @@ public class ChallengeDto {
 	
 	// 🎯 DTO -> Entity 변환: 인스턴스 메서드 (toEntity)
     public Challenge toEntity(User user) {
+        // createdAt 은 넘기지 않는다 - Challenge 엔티티의 @CreationTimestamp 가 INSERT 시점에 채운다
         return Challenge.builder().id(this.getId())
         						.host(user)
         						.title(this.title)
 				                .description(this.getDescription())
-				                .depositAmount(this.depositAmount)
-								.depositAmount(this.getDepositAmount())
+				                .depositAmount(this.getDepositAmount())
 								.requiredCount(this.getRequiredCount())
 								.startDate(this.getStartDate())
 								.endDate(this.getEndDate())
-								.createdAt(createdAt)
 				                .build();
     }
 }
