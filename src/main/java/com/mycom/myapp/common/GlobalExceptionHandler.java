@@ -9,6 +9,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
@@ -256,6 +259,64 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    // ============================================================
+    // 프레임워크 예외 - 폴백(Exception.class)이 가로채 500 나던 것을 정상 상태코드로.
+    //   @RestControllerAdvice(ExceptionHandlerExceptionResolver)가
+    //   ResponseStatusExceptionResolver / DefaultHandlerExceptionResolver 보다 먼저 동작하므로,
+    //   아래 폴백에 이 예외들이 먼저 잡혀 500 으로 뭉개진다. 명시적으로 되살린다.
+    // ============================================================
+
+    // 그 예외가 스스로 들고 있는 상태코드를 존중
+    //   (예: ChallengeServiceImpl.updateChallenge 의 throw new ResponseStatusException(400, "챌린지의 ID가 없습니다."))
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(
+            ResponseStatusException ex, HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(ex.getReason() != null ? ex.getReason() : status.getReasonPhrase())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(status).body(errorResponse);
+    }
+
+    // 404 NOT_FOUND : 매칭되는 핸들러가 없는 URL (오타 경로 등)
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            NoResourceFoundException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .message("요청한 경로를 찾을 수 없습니다.")
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    // 400 BAD_REQUEST : 경로변수/쿼리파라미터 타입 불일치 (예: /api/challenges/abc)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message("잘못된 요청 파라미터입니다: " + ex.getName())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     // 500 INTERNAL_SERVER_ERROR : 예상하지 못한 모든 예외
