@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.mycom.myapp.challenge.dto.MyParticipationResponseDto;
 import com.mycom.myapp.challenge.dto.ParticipantResponseDto;
+import com.mycom.myapp.challenge.entity.Participation;
 
 public interface ParticipationService {
 
@@ -18,4 +19,7 @@ public interface ParticipationService {
 	
 	// 참여 취소하기
 	public int deleteParticipation(Long participationId, Long userId);
+	
+	// 참여 1건 조회
+	public Participation detailParticipation(Long userId, Long challengeId);
 }

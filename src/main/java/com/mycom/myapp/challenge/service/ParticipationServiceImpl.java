@@ -132,6 +132,14 @@ public class ParticipationServiceImpl implements ParticipationService{
 		return result;
 	}
 	
+	// 참여 정보 1건 조회
+	@Override
+	public Participation detailParticipation(Long userId, Long challengeId) {
+		return participationRepository.findByChallenge_IdAndUser_UserId(challengeId, userId)
+								.orElseThrow(() -> new ParticipationNotFoundException(challengeId));	 
+	}
+	
+	
 	/**
 	 * 참여 취소 = 참여 삭제
 	 * @return 반환된 보증금 금액
