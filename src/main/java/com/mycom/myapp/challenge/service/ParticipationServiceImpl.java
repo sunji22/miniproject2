@@ -106,8 +106,8 @@ public class ParticipationServiceImpl implements ParticipationService{
 			log.info("[신규 참여 성공] user {} 챌린지 {} 최초 참여", userId, challengeId);
 		}
 		
-    // 잔액 검증 후 보증금 잠금
-		pointService.lockPoint(userId, depositAmount);
+		// 잔액 검증 후 보증금 잠금
+		pointService.lockPoint(userId, participation, depositAmount);
 		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
     
 		// 식별자(PK)만 리턴

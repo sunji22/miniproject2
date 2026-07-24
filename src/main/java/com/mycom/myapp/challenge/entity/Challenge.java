@@ -3,6 +3,8 @@ package com.mycom.myapp.challenge.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.user.entity.User;
@@ -55,8 +57,8 @@ public class Challenge {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "settlement_status", nullable = false)
 	private SettlementStatus settlementStatus = SettlementStatus.PENDING;
-	
-//	@CreatedDate
+
+	@CreationTimestamp
 	@Column(updatable = false, nullable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt;
 }

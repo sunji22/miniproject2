@@ -15,6 +15,7 @@ import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
+import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.point.entity.PointHistory;
@@ -85,7 +86,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 2. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 		
 		// 3. 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
@@ -125,7 +126,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 2. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 
 		// 3. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
@@ -156,7 +157,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 1. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 
 		// 2. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
