@@ -53,7 +53,9 @@ public class ChallengeServiceTest {
 	    User user = new User();
 	    user.setEmail("test@naver.com"); user.setName("잇으지");
 	    user.setPassword("1234"); user.setRole(Role.USER);
-	    
+	    // 개설자는 개설 즉시 참여 -> 보증금이 잠기므로 잔액이 있어야 한다
+	    user.setPointBalance(100000);
+
 	    User savedUser = userRepository.save(user); // 임시 저장 -> 끝나면 롤백
 	    
 	    log.info("userId={}", savedUser.getUserId());
@@ -69,22 +71,51 @@ public class ChallengeServiceTest {
 								                .endDate(LocalDate.now().plusDays(7))
 												.build();
 		
-		// when
-		ResultDto<Long> result = challengeService.insertChallenge(challengeDto);
-		
-		log.info("챌린지 id={}", result.getData());
-		
+		// when - 서비스는 raw data(id)를 반환하고, 요청자 userId 를 인자로 받는다
+		Long savedId = challengeService.insertChallenge(challengeDto, savedUser.getUserId());
+
+		log.info("챌린지 id={}", savedId);
+
 		// then
-		assertEquals("success", result.getResult());
-//		assertEquals(ChallengeStatus.RECRUITING, challenge.getStatus());
-		
+		assertNotNull(savedId);
+		assertEquals(savedUser.getUserId(),
+				challengeRepository.findById(savedId).get().getHost().getUserId());
+	}
+
+	// 테스트가 스스로 쓸 host + 챌린지를 만든다 (하드코딩 id 에 의존하지 않도록)
+	private User saveHost(String email) {
+		User user = new User();
+		user.setEmail(email);
+		user.setName("호스트");
+		user.setPassword("1234");
+		user.setRole(Role.USER);
+		user.setPointBalance(100000);
+		return userRepository.save(user);
+	}
+
+	private Challenge saveChallenge(User host) {
+		Challenge challenge = Challenge.builder()
+				.host(host)
+				.title("원본 챌린지")
+				.description("테스트용 데이터")
+				.depositAmount(10000)
+				.requiredCount(5)
+				.startDate(LocalDate.now())
+				.endDate(LocalDate.now().plusDays(7))
+				.status(ChallengeStatus.RECRUITING)   // 수정/삭제는 RECRUITING 상태만 허용
+				.createdAt(LocalDateTime.now())
+				.build();
+		return challengeRepository.save(challenge);
 	}
 	
 	@Test
 	@Transactional
 	void 업데이트_테스트() {
-		// given
-		Long id = 41L;
+		// given - 이 테스트가 직접 만든 host 와 챌린지를 대상으로 한다
+		User host = saveHost("update-host@test.com");
+		Challenge origin = saveChallenge(host);
+		Long id = origin.getId();
+
 		ChallengeDto request = ChallengeDto.builder().id(id)
 											.title("테스트 챌린지")
 											.description("테스트 챌린지다.")
@@ -93,22 +124,39 @@ public class ChallengeServiceTest {
 							                .startDate(LocalDate.now())
 							                .endDate(LocalDate.now().plusDays(7))
 											.build();
-		
-		// when
-		ResultDto<Long> result = challengeService.updateChallenge(request);
-		
+
+		// when - 요청자 userId 를 같이 넘긴다 (작성자 검증)
+		Long updatedId = challengeService.updateChallenge(request, host.getUserId());
+
 		em.flush();
         em.clear();
-		
+
 
         // then
 		Optional<Challenge> updatedChallenge = challengeRepository.findById(id);
-		
+
 		assertNotNull(updatedChallenge);
 		assertEquals("테스트 챌린지", updatedChallenge.get().getTitle());
-		
-		assertEquals("success", result.getResult());
-		
+		assertEquals(id, updatedId);
+	}
+
+	@Test
+	@Transactional
+	void 업데이트_작성자아니면_실패() {
+		User host = saveHost("owner@test.com");
+		User other = saveHost("other@test.com");
+		Challenge origin = saveChallenge(host);
+
+		ChallengeDto request = ChallengeDto.builder().id(origin.getId())
+											.title("남이 바꾸려 함")
+											.depositAmount(10000)
+							                .requiredCount(5)
+							                .startDate(LocalDate.now())
+							                .endDate(LocalDate.now().plusDays(7))
+											.build();
+
+		assertThatThrownBy(() -> challengeService.updateChallenge(request, other.getUserId()))
+				.isInstanceOf(RuntimeException.class);
 	}
 	
 	@Test
@@ -117,25 +165,17 @@ public class ChallengeServiceTest {
         // ==========================================
         // [1] GIVEN: 삭제 타겟 엔티티 사전 영속화
         // ==========================================
-//        Long hostId = 100L;
-        Challenge challenge = Challenge.builder()
-                .title("삭제 대상 챌린지")
-                .description("테스트용 데이터")
-                .depositAmount(10000)
-                .requiredCount(5)
-                .startDate(LocalDate.now())
-                .endDate(LocalDate.now().plusDays(7))
-                .createdAt(LocalDateTime.now())
-//                .hostId(hostId)
-                .build();
+        // 삭제는 요청자=작성자 검증을 하므로 host 를 반드시 채워야 한다
+        User host = saveHost("delete-host@test.com");
+        Challenge challenge = saveChallenge(host);
+        challenge.setTitle("삭제 대상 챌린지");
 
-        challengeRepository.save(challenge);
         Long targetId = challenge.getId();
 
         // ==========================================
         // [2] WHEN: 삭제 서비스 파이프라인 격발
         // ==========================================
-        ResultDto<Void> result = challengeService.deleteChallenge(targetId);
+        challengeService.deleteChallenge(targetId, host.getUserId());
 
         // 🎯 핵심 : 쓰기 지연 DELETE 쿼리를 DB에 즉시 사출하고 1차 캐시 완전 휘발
         em.flush();
@@ -144,12 +184,7 @@ public class ChallengeServiceTest {
         // ==========================================
         // [3] THEN: 정밀 검증
         // ==========================================
-        // 검증 1: 서비스 응답 아키텍처 규격 검증
-        assertThat(result).isNotNull();
-        assertThat(result.getResult()).isEqualTo("success");
-//        assertThat(result.getData()).isEqualTo(targetId); // Void 타입
-
-        // 검증 2: 실물 DB 재조회 시 데이터 존재하지 않음(Hard Delete) 검증
+        // 검증 1: 실물 DB 재조회 시 데이터 존재하지 않음(Hard Delete) 검증
         Optional<Challenge> deletedChallenge = challengeRepository.findById(targetId);
         assertThat(deletedChallenge).isEmpty();
 

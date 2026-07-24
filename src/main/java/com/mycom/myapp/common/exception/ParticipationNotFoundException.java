@@ -1,12 +1,15 @@
 package com.mycom.myapp.common.exception;
 
-// 조회하려는 참여가 DB 에 없을 때 서비스 계층에서 던지는 사용자 정의 예외
-// 404 NOT_FOUND
+// 참여 정보가 없는 경우 예외 발생
 public class ParticipationNotFoundException extends RuntimeException {
+	
+	private static final long serialVersionUID = 1L;
 
-    private static final long serialVersionUID = 1L;
-
-    public ParticipationNotFoundException(Long challengeId) {
-        super("해당 챌린지 참여 기록이 없습니다. id=" + challengeId);
+    public ParticipationNotFoundException(Long participationId) {
+        super("참여 정보를 찾을 수 없습니다. id=" + participationId);
     }
+    
+    public ParticipationNotFoundException() {
+		super("참여자가 없습니다.");
+	}
 }

@@ -25,6 +25,15 @@ import com.mycom.myapp.common.exception.NotParticipationOwnerException;
 import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
+// 인증글(Verification) 도메인 예외 - 아래 전용 핸들러에서 사용
+import com.mycom.myapp.common.exception.AlreadyCheckedException;
+import com.mycom.myapp.common.exception.MissingVerificationFilterException;
+import com.mycom.myapp.common.exception.NotChallengeParticipantException;
+import com.mycom.myapp.common.exception.NotVerificationOwnerException;
+import com.mycom.myapp.common.exception.SelfCheckNotAllowedException;
+import com.mycom.myapp.common.exception.VerificationAlreadyCheckedModifyException;
+import com.mycom.myapp.common.exception.VerificationNotFoundException;
+import com.mycom.myapp.common.exception.VerificationPeriodException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -162,6 +171,80 @@ public class GlobalExceptionHandler {
             CannotDeleteOngoingChallengeException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
+            RuntimeException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    // 400 BAD_REQUEST : 인증글 규칙 위반
+    @ExceptionHandler({
+            SelfCheckNotAllowedException.class,
+            VerificationPeriodException.class,
+            MissingVerificationFilterException.class
+    })
+    public ResponseEntity<ErrorResponse> handleVerificationBadRequest(
+            RuntimeException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    // 403 FORBIDDEN : 인증글 소유/자격 위반
+    @ExceptionHandler({
+            NotChallengeParticipantException.class,
+            NotVerificationOwnerException.class
+    })
+    public ResponseEntity<ErrorResponse> handleVerificationForbidden(
+            RuntimeException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    // 404 NOT_FOUND : 인증글 없음
+    @ExceptionHandler(VerificationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleVerificationNotFound(
+            VerificationNotFoundException ex, HttpServletRequest request) {
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    // 409 CONFLICT : 인증글 상태 충돌
+    @ExceptionHandler({
+            AlreadyCheckedException.class,
+            VerificationAlreadyCheckedModifyException.class
+    })
+    public ResponseEntity<ErrorResponse> handleVerificationConflict(
             RuntimeException ex, HttpServletRequest request) {
 
         ErrorResponse errorResponse = ErrorResponse.builder()

@@ -65,10 +65,10 @@ public class SettlementServiceTest {
 		// 호스트 생성 (잔액 10000)
 		host = userRepository.save(createUser("host@test.com", "홍길동", 10000));
 
-		// 참여자 생성 (각 잔액 10000)
-		participant1 = userRepository.save(createUser("user1@test.com", "이순신", 10000));
-		participant2 = userRepository.save(createUser("user2@test.com", "강감찬", 10000));
-		participant3 = userRepository.save(createUser("user3@test.com", "을지문덕", 10000));
+		// 참여자 생성 (각 잔액 10000 | 이미 포인트 잠금된 상태에서 테스트 처리 (보증금 3000) | 참여자 현 보유 포인트 : 7000) 
+		participant1 = userRepository.save(createUser("user1@test.com", "이순신", 7000));
+		participant2 = userRepository.save(createUser("user2@test.com", "강감찬", 7000));
+		participant3 = userRepository.save(createUser("user3@test.com", "을지문덕", 7000));
 
 		// 챌린지 생성 (보증금 3000, 성공조건 3회)
 		challenge = challengeRepository.save(
@@ -154,9 +154,9 @@ public class SettlementServiceTest {
 		// 참여자1에게 보증금 환불
 		settlementService.refund(participant1.getUserId(), p1.getId(), refundAmount);
 
-		// 유저 잔액 10000 + 3000 = 13000
+		// 유저 잔액 7000 + 3000 = 10000
 		User updated = userRepository.findById(participant1.getUserId()).get();
-		assertEquals(13000, updated.getPointBalance());
+		assertEquals(10000, updated.getPointBalance());
 
 		// PointHistory DEPOSIT_REFUND 이력 저장 확인
 		List<PointHistory> history = pointHistoryRepository
@@ -200,9 +200,9 @@ public class SettlementServiceTest {
 		// 참여자1에게 보너스 분배
 		settlementService.reward(participant1.getUserId(), p1.getId(), totalPenaltyAmount, successCount);
 
-		// 유저 잔액 10000 + 1500 = 11500 (3000 / 2 = 1500)
+		// 유저 잔액 7000 + 1500 = 8500 (3000 / 2 = 1500)
 		User updated = userRepository.findById(participant1.getUserId()).get();
-		assertEquals(11500, updated.getPointBalance());
+		assertEquals(8500, updated.getPointBalance());
 
 		// PointHistory REWARD 이력 저장 확인
 		List<PointHistory> history = pointHistoryRepository
@@ -220,15 +220,15 @@ public class SettlementServiceTest {
 		// 정산 실행 (호스트가 실행)
 		settlementService.settleChallenge(challenge.getId(), host.getUserId());
 
-		// 참여자1 (성공): 보증금 3000 환불 + 보너스 1500 (3000/2) = 잔액 +4500
+		// 참여자1 (성공): 보증금 3000 환불 + 보너스 1500 (3000/2) = 현 보유액(7500) + 4500
 		User updated1 = userRepository.findById(participant1.getUserId()).get();
-		assertEquals(14500, updated1.getPointBalance());
+		assertEquals(11500, updated1.getPointBalance());
 
-		// 참여자2 (성공): 보증금 3000 환불 + 보너스 1500 = 잔액 +4500
+		// 참여자2 (성공): 보증금 3000 환불 + 보너스 1500 (3000/2) = 현 보유액(7500) + 4500
 		User updated2 = userRepository.findById(participant2.getUserId()).get();
-		assertEquals(14500, updated2.getPointBalance());
+		assertEquals(11500, updated2.getPointBalance());
 
-		// 참여자3 (실패): 보증금 3000 몰수 = 잔액 -3000
+		// 참여자3 (실패): 보증금 3000 몰수 = 잔액 -3000 = 현 보유액(7000)
 		User updated3 = userRepository.findById(participant3.getUserId()).get();
 		assertEquals(7000, updated3.getPointBalance());
 
@@ -251,13 +251,13 @@ public class SettlementServiceTest {
 
 		// 전원 보증금 환불 (보너스 없음 - 실패자 0명)
 		User updated1 = userRepository.findById(participant1.getUserId()).get();
-		assertEquals(13000, updated1.getPointBalance());
+		assertEquals(10000, updated1.getPointBalance());
 
 		User updated2 = userRepository.findById(participant2.getUserId()).get();
-		assertEquals(13000, updated2.getPointBalance());
+		assertEquals(10000, updated2.getPointBalance());
 
 		User updated3 = userRepository.findById(participant3.getUserId()).get();
-		assertEquals(13000, updated3.getPointBalance());
+		assertEquals(10000, updated3.getPointBalance());
 
 		// 챌린지 상태 변경 확인
 		Challenge updatedChallenge = challengeRepository.findById(challenge.getId()).get();

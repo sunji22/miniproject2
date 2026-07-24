@@ -11,6 +11,7 @@ import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
@@ -215,8 +216,10 @@ public class SettlementServiceImpl implements SettlementService {
 		for(Participation p : participants) {
 			if(p.getSuccessCount() >= challenge.getRequiredCount()) {
 				successCount++;												// 성공자 수 카운트
+				p.setStatus(ParticipationStatus.SUCCESS);					// 참여자 상태 성공으로 변경
 			} else {
 				totalPenaltyAmount += challenge.getDepositAmount();			// 실패자 보증금 누적
+				p.setStatus(ParticipationStatus.FAILED);					// 참여자 상태 실패로 변경
 			}
 		}
 		
@@ -233,6 +236,9 @@ public class SettlementServiceImpl implements SettlementService {
 				}
 			}
 		}
+		
+		participationRepository.saveAll(participants);				// 참여자 상태 저장
+		
 		// #5. 챌린지 상태 변경 ( 각 정산을 통해 상태 변경 -> 한 번만 선언) 중복 제거
 		challenge.setStatus(ChallengeStatus.CLOSED);
 		challenge.setSettlementStatus(SettlementStatus.SETTLED);

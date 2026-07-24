@@ -76,7 +76,7 @@ public class ParticipationServiceUnitTest {
 
         // then (결과 검증)
         // PointService의 lockPoint()가 5,000원으로 호출되었는지 검증
-        then(pointService).should().lockPoint(userId, 5000);
+        then(pointService).should().lockPoint(userId, any(Participation.class), 5000);
         
         // ParticipationRepository의 save()가 실행되었는지 검증
         then(participationRepository).should().save(any(Participation.class));

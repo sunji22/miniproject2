@@ -81,10 +81,6 @@ public class ParticipationServiceImpl implements ParticipationService{
 			log.warn("[참여 실패] 잔액 부족 - userId: {}, depositAmount: {}, balance: {}", userId, depositAmount, balance);
 			throw new InsufficientPointException(depositAmount, balance);
 		}
-
-		// 잔액 검증 후 보증금 잠금
-		pointService.lockPoint(userId, depositAmount);
-		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
 		
 		// 참여 엔티티 처리 로직 : 신규 생성 or 상태 변경(CANCLED -> JOINED)
 		Participation participation;
@@ -110,6 +106,10 @@ public class ParticipationServiceImpl implements ParticipationService{
 			log.info("[신규 참여 성공] user {} 챌린지 {} 최초 참여", userId, challengeId);
 		}
 		
+    // 잔액 검증 후 보증금 잠금
+		pointService.lockPoint(userId, depositAmount);
+		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
+    
 		// 식별자(PK)만 리턴
 		return participation.getId();
 	}	

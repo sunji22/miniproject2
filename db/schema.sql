@@ -1,6 +1,7 @@
 -- 보증금 챌린지 - DB 스키마
 
 DROP TABLE IF EXISTS point_history;
+DROP TABLE IF EXISTS verification_check;
 DROP TABLE IF EXISTS verification;
 DROP TABLE IF EXISTS refresh_token;
 DROP TABLE IF EXISTS participation;
@@ -35,6 +36,7 @@ CREATE TABLE challenge (
     start_date     DATE         NOT NULL,
     end_date       DATE         NOT NULL,
     status         VARCHAR(255) NOT NULL DEFAULT 'RECRUITING', -- enum ChallengeStatus: RECRUITING/ONGOING/CLOSED
+    settlement_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- enum SettlementStatus: PENDING/SETTLED (정산 스케줄러가 사용)
     created_at     DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (challenge_id),
     CONSTRAINT fk_challenge_host FOREIGN KEY (host_id) REFERENCES user (user_id)
@@ -57,7 +59,7 @@ CREATE TABLE participation (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------
--- 4. 인증글
+-- 4. 인증글  (com.mycom.myapp.verification.entity.Verification)
 -- ------------------------------------------------------------
 CREATE TABLE verification (
     verification_id  BIGINT       NOT NULL AUTO_INCREMENT,
@@ -66,11 +68,28 @@ CREATE TABLE verification (
     image_url        VARCHAR(255),
     content          VARCHAR(500),
     verified_date    DATE         NOT NULL,
+    succeeded        BIT(1)       NOT NULL DEFAULT 0, -- 상호체크 정원을 채워 성공 판정이 끝났는지 (successCount 1회 반영 가드)
     created_at       DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (verification_id),
     CONSTRAINT uk_verification UNIQUE (participation_id, verified_date), -- 하루 1인증
     CONSTRAINT fk_verification_participation FOREIGN KEY (participation_id) REFERENCES participation (participation_id),
     CONSTRAINT fk_verification_user          FOREIGN KEY (user_id)          REFERENCES user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ------------------------------------------------------------
+-- 4-1. 상호체크  (com.mycom.myapp.verification.entity.VerificationCheck)
+--   "이 인증글을 이 회원이 확인했다" 1건.
+--   성공 판정: countByVerification_Id >= (챌린지 참여자수 - 1)
+-- ------------------------------------------------------------
+CREATE TABLE verification_check (
+    verification_check_id BIGINT      NOT NULL AUTO_INCREMENT,
+    verification_id       BIGINT      NOT NULL,
+    checker_user_id       BIGINT      NOT NULL,      -- 체크한 사람 (= 같은 챌린지의 다른 참여자)
+    created_at            DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (verification_check_id),
+    CONSTRAINT uk_verification_check UNIQUE (verification_id, checker_user_id), -- 1인 1체크
+    CONSTRAINT fk_check_verification FOREIGN KEY (verification_id) REFERENCES verification (verification_id),
+    CONSTRAINT fk_check_user         FOREIGN KEY (checker_user_id) REFERENCES user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ------------------------------------------------------------

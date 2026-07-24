@@ -32,6 +32,8 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
     boolean existsByChallenge_IdAndUser_UserId(Long challengeId, Long userId);
 
     // JOINED 상태인 참여만 단건 조회
-    Optional<Participation> findByChallenge_IdAndUser_UserIdAndStatus(Long id, Long userId, ParticipationStatus joined);
+    Optional<Participation> findByChallenge_IdAndUser_UserIdAndStatus(Long challengeId, Long userId, ParticipationStatus joined);
 	
+    // 챌린지 참여자 수 (상호체크에 필요한 체크 수 = 참여자수 - 1 계산에 사용)
+    long countByChallenge_Id(Long challengeId);
 }
