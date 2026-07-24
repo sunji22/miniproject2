@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
+import com.mycom.myapp.challenge.dto.MyParticipationResponseDto;
 import com.mycom.myapp.challenge.dto.ParticipantResponseDto;
 import com.mycom.myapp.challenge.service.ChallengeService;
 import com.mycom.myapp.challenge.service.ParticipationService;
@@ -128,15 +129,18 @@ public class ChallengeController {
 		return ResultDto.success(data);
 	}
 	
-	// 특정 사용자의 참여 챌린지 목록 조회
-	@Operation(summary = "특정 사용자의 참여 챌린지 목록 조회")
+	// 내가 참여한 챌린지 목록 조회 (참여 챌린지 카드 화면)
+	//   반환은 ParticipantResponseDto(챌린지 안의 "참여자" 정보)가 아니라
+	//   MyParticipationResponseDto(내가 참여한 "챌린지" 정보)여야 한다.
+	//   -> 화면이 challengeTitle / challengeStatus / myStatus 로 카드를 그린다
+	@Operation(summary = "내가 참여한 챌린지 목록 조회")
 	@GetMapping("/my/participations")
-	public ResultDto<List<ParticipantResponseDto>> listMyParticipation(
+	public ResultDto<List<MyParticipationResponseDto>> listMyParticipation(
 				@AuthenticationPrincipal(expression = "id") Long userId
 			) {
-		
-		List<ParticipantResponseDto> data = participationService.listParticipant(userId);
-		
+
+		List<MyParticipationResponseDto> data = participationService.listMyParticipation(userId);
+
 		return ResultDto.success(data);
 	}
 }
