@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
@@ -30,6 +31,8 @@ import com.mycom.myapp.user.entity.Role;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
 
+import jakarta.persistence.EntityManager;
+
 @SpringBootTest
 @Transactional
 class ChallengeServiceIntegrationTest {
@@ -45,6 +48,9 @@ class ChallengeServiceIntegrationTest {
 
     @Autowired
     private ParticipationRepository participationRepository;
+    
+    @Autowired
+    private EntityManager em; // 🎯 EntityManager 주입 추가
 
     private User hostUser;
 
@@ -266,5 +272,63 @@ class ChallengeServiceIntegrationTest {
                 .isInstanceOf(CannotDeleteOngoingChallengeException.class);
 
         assertThat(challengeRepository.existsById(saved.getId())).isTrue();
+    }
+    
+    @Test
+    @DisplayName("모집 중인 챌린지 정상 삭제 통합 테스트")
+    // [검증 요약] 모집 중(RECRUITING)인 챌린지 삭제 시 DB 레코드가 실제로 제거(existsById == false)되는지 검증합니다.
+    // 이건 참여자가 없는 챌린지. 참여 테이블에 FK 제약이 없기때문에 정상 삭제
+    void deleteChallenge_Integration_Success() {
+        // given: 삭제 가능한 모집 중(RECRUITING) 상태의 챌린지 생성
+        Challenge recruitingChallenge = Challenge.builder()
+                .title("삭제할 챌린지")
+                .description("설명")
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(5))
+                .createdAt(LocalDateTime.now())
+                .requiredCount(3)
+                .depositAmount(1000)
+                .status(ChallengeStatus.RECRUITING)
+                .host(hostUser)
+                .build();
+        Challenge saved = challengeRepository.save(recruitingChallenge);
+
+        // when: 정상 삭제 수행
+        challengeService.deleteChallenge(saved.getId(), hostUser.getUserId());
+
+        // then: DB에서 실제로 삭제되었는지 검증 (existsById -> false)
+        assertThat(challengeRepository.existsById(saved.getId())).isFalse();
+    }
+    
+    @Test
+    @DisplayName("참여자가 존재할 때 챌린지 삭제 시 DB 외래키 제약조건 위반 예외 발생")
+    void deleteChallenge_Integration_Fail_WhenParticipationExists() {
+        // given: 챌린지 생성 (insertChallenge 내부에서 개설자 자가 참여 처리까지 완료되어 Participation 연관 데이터 존재)
+        Challenge recruitingChallenge = Challenge.builder()
+                .title("삭제할 챌린지")
+                .description("설명")
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(5))
+                .createdAt(LocalDateTime.now())
+                .requiredCount(3)
+                .depositAmount(1000)
+                .status(ChallengeStatus.RECRUITING)
+                .host(hostUser)
+                .build();
+
+        Long challengeId = challengeService.insertChallenge(
+                ChallengeDto.from(recruitingChallenge), hostUser.getUserId());
+
+        // when & then: FK 참조 중인 Participation 이 존재하므로 삭제 시 DB 예외 발생 검증
+        // DB 수준의 FK 제약조건 예외가 터지기 전에, JPA 영속성 컨텍스트가 객체 연관관계 정합성을 검사하여 메모리 단에서 먼저 예외를 던진다.
+        assertThatThrownBy(() -> {
+        	challengeService.deleteChallenge(challengeId, hostUser.getUserId());
+        	challengeRepository.flush(); // 🎯 지연 쓰기 강제 수동 플러시
+        }).isInstanceOf(InvalidDataAccessApiUsageException.class);
+
+        em.clear(); // flush()로 오염된 1차 캐시 초기화
+        
+        // 예외 발생 후 DB에 챌린지 레코드가 롤백되어 안전하게 보존되었는지 확인
+        assertThat(challengeRepository.existsById(challengeId)).isTrue();
     }
 }
