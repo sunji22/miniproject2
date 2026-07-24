@@ -17,8 +17,12 @@ import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
+import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
+import com.mycom.myapp.common.exception.NotParticipationOwnerException;
+import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.point.service.PointService;
+import com.mycom.myapp.point.service.SettlementService;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
 
@@ -34,6 +38,8 @@ public class ParticipationServiceImpl implements ParticipationService{
 	private final UserRepository userRepository; // -> 이후 Service 를 주입받도록 개선 필요 ?
 	private final ChallengeRepository challengeRepository; // 순환참조 때문에 직접 주입받도록 수정
 	private final PointService pointService;
+	
+	SettlementService settlementService;
 	
 	/**
 	 * 등록 = 챌린지 참여
@@ -97,6 +103,7 @@ public class ParticipationServiceImpl implements ParticipationService{
 	 * -> join fetch user 적용
 	 * 응답용 DTO 리스트로 반환
 	 */
+	@Override
 	@Transactional(readOnly = true)
 	public List<ParticipantResponseDto> listParticipant(Long challengeId) {
 		List<ParticipantResponseDto> result = new ArrayList<>();
@@ -113,6 +120,7 @@ public class ParticipationServiceImpl implements ParticipationService{
 	 * 유저의 참여 챌린지 목록 조회
 	 * 위와 동일
 	 */
+	@Override
 	@Transactional(readOnly = true)
 	public List<MyParticipationResponseDto> listMyParticipation(Long userId) {
 		List<MyParticipationResponseDto> result = new ArrayList<>();
@@ -121,6 +129,37 @@ public class ParticipationServiceImpl implements ParticipationService{
 		// 변환. [N+1 발생 체크]
 		participations.forEach( p -> result.add(MyParticipationResponseDto.from(p)) );
 		
-		return null;
+		return result;
+	}
+	
+	/**
+	 * 참여 취소 = 참여 삭제
+	 * @return 반환된 보증금 금액
+	 */
+	@Override
+	@Transactional
+	public int deleteParticipation(Long participationId, Long userId) {
+		Participation participation = participationRepository.findById(participationId)
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
+		
+		// 1. 요청자 = 참여자 검증 (403 FORBIDDEN)
+		Long participatedUserId = participation.getUser().getUserId();
+		if(!userId.equals(participatedUserId)) {
+			throw new NotParticipationOwnerException(); 
+		}
+		
+		// 2. 모집중 상태 검증 : 모집중(시작 전) 일 때만 취소 가능 (400 BAD_REQUEST) 
+		if(participation.getChallenge().getStatus() != ChallengeStatus.RECRUITING) {
+			throw new InvalidChallengeStatusException();
+		}
+		
+		// 3. 보증금 반환
+		int depositAmount = participation.getChallenge().getDepositAmount();
+		settlementService.refund(userId, participationId, depositAmount);
+		
+		// 4. 삭제
+		participationRepository.delete(participation);
+		
+		return depositAmount;
 	}
 }

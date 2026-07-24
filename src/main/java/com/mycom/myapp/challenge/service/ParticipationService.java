@@ -15,4 +15,7 @@ public interface ParticipationService {
 	
 	// 내 참여 목록 조회
 	public List<MyParticipationResponseDto> listMyParticipation(Long userId);
+	
+	// 참여 취소하기
+	public int deleteParticipation(Long participationId, Long userId);
 }
