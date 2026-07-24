@@ -51,7 +51,7 @@ public class SettlementServiceImpl implements SettlementService {
 		}
 
 		// 3. 참여자 목록 조회
-		List<Participation> participants = participationRepository.findByChallenge_Id(challengeId);
+		List<Participation> participants = participationRepository.findByChallenge_IdAndStatus(challengeId, ParticipationStatus.JOINED);
 
 		// 4. 각 참여자한테 보증금 전액 몰수
 		for (Participation participation : participants) {
@@ -207,7 +207,7 @@ public class SettlementServiceImpl implements SettlementService {
 		}
 		
 		// 4. 참여자 목록 조회
-		List<Participation> participants = participationRepository.findByChallenge_Id(challengeId);
+		List<Participation> participants = participationRepository.findByChallenge_IdAndStatus(challengeId, ParticipationStatus.JOINED);
 		
 		// 5. 성공자 / 실패자 판정
 		int successCount = 0;
