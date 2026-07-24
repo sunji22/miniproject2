@@ -46,7 +46,11 @@ public class ChallengeDto {
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
 	
 	// (일단은) Service 에서 현재시각 주입 -> 리팩토링 필요할듯
-	private LocalDateTime createdAt; 
+	private LocalDateTime createdAt;
+	
+	// 추가: 상세페이지 응답 시 사용자의 참여 id 추가
+	// 상세페이지에서 삭제 요청 시 필요 & 사용자 참여 여부 판단 가능 (null 이면 참여중x)
+	private Long participationId;
 	
 	// 🎯 Entity -> DTO 변환: 정적 팩토리 메서드 (from)
 	public static ChallengeDto from(Challenge challenge) {

@@ -21,6 +21,7 @@ import com.mycom.myapp.common.exception.InvalidChallengePeriodException;
 import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
 import com.mycom.myapp.common.exception.InvalidRefreshTokenException;
 import com.mycom.myapp.common.exception.NotChallengeHostException;
+import com.mycom.myapp.common.exception.NotParticipationOwnerException;
 import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
@@ -69,7 +70,8 @@ public class GlobalExceptionHandler {
     	InsufficientPointException.class,
     	InvalidChallengePeriodException.class,
     	ExceededRequiredCountException.class,
-    	InvalidChallengeStatusException.class
+    	InvalidChallengeStatusException.class,
+    	IllegalStateException.class
     })
     public ResponseEntity<ErrorResponse> handleInsufficientPoint(
             RuntimeException ex, HttpServletRequest request) {
@@ -123,7 +125,8 @@ public class GlobalExceptionHandler {
     //   (SecurityFilterChain 단계의 인가 실패는 AccessDeniedHandler 가 처리하므로 여기 안 옴)
     @ExceptionHandler({
     	AccessDeniedException.class,
-    	NotChallengeHostException.class
+    	NotChallengeHostException.class,
+    	NotParticipationOwnerException.class
     })
     public ResponseEntity<ErrorResponse> handleAccessDenied(
             RuntimeException ex, HttpServletRequest request) {
@@ -139,8 +142,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
-    // 404 NOT_FOUND : 존재하지 않는 리소스 조회 (챌린지 없음 / 회원 없음)
-    @ExceptionHandler({ChallengeNotFoundException.class, UserNotFoundException.class, ParticipationNotFoundException.class})
+    // 404 NOT_FOUND : 존재하지 않는 리소스 조회 (챌린지 없음 / 회원 없음 / 참여기록 없음)
+    @ExceptionHandler({ChallengeNotFoundException.class
+    	, UserNotFoundException.class
+    	, ParticipationNotFoundException.class
+    	})
     public ResponseEntity<ErrorResponse> handleNotFound(
             RuntimeException ex, HttpServletRequest request) {
 

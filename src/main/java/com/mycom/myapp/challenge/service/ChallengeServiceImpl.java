@@ -17,8 +17,10 @@ import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
+import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
-import com.mycom.myapp.common.ResultDto;
+import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.ExceededRequiredCountException;
@@ -38,7 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
-	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기
+	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기 ?
+	private final ParticipationRepository participationRepository;
 	
 	private final ParticipationService participationService;
 
@@ -69,10 +72,26 @@ public class ChallengeServiceImpl implements ChallengeService {
 
 	// 상세 조회
 	@Override
-	public ChallengeDto detailChallenge(Long id) {
+	public ChallengeDto detailChallenge(Long id, Long userId) {
 		Challenge challenge = challengeRepository.findById(id)
 									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
+		
+		// [ 사용자에 따라 참여 id 세팅하기 ]
+		
+		// 1. 미인증 사용자 (userId == null)
+		if(userId == null) {
+			challengeDto.setParticipationId(null);
+	        return challengeDto;
+		}
+		
+		// 2. 인증 사용자 - 참여 id
+		Long participationId = participationRepository
+	            .findByChallenge_IdAndUser_UserIdAndStatus(id, userId, ParticipationStatus.JOINED)
+	            .map(Participation::getId)
+	            // 미참여자 = null
+	            .orElse(null);
+		challengeDto.setParticipationId(participationId);
 		
 		return challengeDto;
 	}

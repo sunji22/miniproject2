@@ -32,7 +32,7 @@ public class Participation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "participation_id")
-    private Long Id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "challenge_id", nullable = false)
@@ -61,5 +61,21 @@ public class Participation {
     	participation.setChallenge(challenge);
     	
     	return participation;
+    }
+    
+    // 참여 취소 이후 다시 참여할 때 상태 변경에 사용. 의미를 표현하기 위해 setter 대신 사용.
+    public void rejoin() {
+    	if (this.status == ParticipationStatus.JOINED) {
+            throw new IllegalStateException("이미 참여 중인 상태입니다.");
+        }
+    	this.status = ParticipationStatus.JOINED;
+    }
+    
+    // 참여 취소하기
+    public void cancel() {
+    	if (this.status != ParticipationStatus.JOINED) {
+            throw new IllegalStateException("참여 중인 챌린지가 아닙니다.");
+        }
+    	this.status = ParticipationStatus.CANCLED;
     }
 }
