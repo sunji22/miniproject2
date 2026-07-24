@@ -31,7 +31,7 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
 
     boolean existsByChallenge_IdAndUser_UserId(Long challengeId, Long userId);
 
-    // JOINED 상태인 참여만 조회
+    // JOINED 상태인 참여만 단건 조회
     Optional<Participation> findByChallenge_IdAndUser_UserIdAndStatus(Long id, Long userId, ParticipationStatus joined);
 	
 }
