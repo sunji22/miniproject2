@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.common.exception.InsufficientPointException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.point.entity.PointHistory;
@@ -67,7 +68,7 @@ public class PointServiceImpl implements PointService {
 	@Override
 	// #3. 포인트 잠금 처리 ( 정산 등을 위해 일정 금액 잠금 )
 	@Transactional
-	public void lockPoint(Long userId, int amount) {
+	public void lockPoint(Long userId, Participation participation, int amount) {
 		// 유저 조회 ( 유저 존재 X 예외 처리 )
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
@@ -79,7 +80,7 @@ public class PointServiceImpl implements PointService {
 
 		user.setPointBalance(user.getPointBalance() - amount);					// 잠금 (차감)
 
-		PointHistory history = new PointHistory(null, user, null, amount, PointType.DEPOSIT_LOCK, user.getPointBalance(), LocalDateTime.now());
+		PointHistory history = new PointHistory(null, user, participation, amount, PointType.DEPOSIT_LOCK, user.getPointBalance(), LocalDateTime.now());
 		pointHistoryRepository.save(history);
 	}
 

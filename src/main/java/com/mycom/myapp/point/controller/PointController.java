@@ -70,17 +70,7 @@ public class PointController {
 		return ResultDto.success(response);
 	}
 	
-	// #4. 포인트 잠금
-	@PostMapping("/lock")
-	public ResultDto<Void> lock(
-			HttpServletRequest request,
-			@RequestBody PointRequestDto dto){
-		Long userId = getCurrentUserId(request);
-		pointService.lockPoint(userId, dto.getAmount());
-		return ResultDto.success();
-	}
-	
-	// #5. 포인트 차감
+	// #4. 포인트 차감
 	@PostMapping("/withdraw")
 	public ResultDto<Void> withdraw(
 			HttpServletRequest request,

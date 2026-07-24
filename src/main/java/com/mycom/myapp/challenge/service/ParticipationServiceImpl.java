@@ -69,22 +69,23 @@ public class ParticipationServiceImpl implements ParticipationService{
 			throw new InsufficientPointException(depositAmount, balance);
 		}
 
-		// 잔액 검증 후 보증금 잠금
-		pointService.lockPoint(userId, depositAmount);
-		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
-		
 		// 참여 엔티티 객체 생성 -> 저장
 		Participation participation = Participation.createParticipation(user, challenge);
 		// [중복 참여 2차 방어]
 		try {			
 			participationRepository.save(participation);
-		// 찰나에 2번 참여하기 하면 DB에 insert 가 2번 도착한다.
-		// 2번째 insert 시에 UNIQUE 제약조건에 의해 DataIntegrityViolationException 발생
+			// 찰나에 2번 참여하기 하면 DB에 insert 가 2번 도착한다.
+			// 2번째 insert 시에 UNIQUE 제약조건에 의해 DataIntegrityViolationException 발생
 		} catch (DataIntegrityViolationException e) {
 //			log.warn("[참여 실패] 중복 참여2 - challengeId: {}, userId: {}", challengeId, userId);
 			log.error("[DB ERROR DETAILED REASON] ", e.getRootCause());
 			throw new DuplicateParticipationException();
 		}
+		
+		// 잔액 검증 후 보증금 잠금
+		pointService.lockPoint(userId, participation, depositAmount);
+		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
+		
 		
 		log.info("[참여 성공] user {} 챌린지 {} 참여", userId, challengeId);
 		// 식별자(PK)만 리턴

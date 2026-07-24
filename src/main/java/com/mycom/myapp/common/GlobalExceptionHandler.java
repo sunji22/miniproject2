@@ -21,6 +21,7 @@ import com.mycom.myapp.common.exception.InvalidChallengePeriodException;
 import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
 import com.mycom.myapp.common.exception.InvalidRefreshTokenException;
 import com.mycom.myapp.common.exception.NotChallengeHostException;
+import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 
@@ -130,7 +131,7 @@ public class GlobalExceptionHandler {
     }
 
     // 404 NOT_FOUND : 존재하지 않는 리소스 조회 (챌린지 없음 / 회원 없음)
-    @ExceptionHandler({ChallengeNotFoundException.class, UserNotFoundException.class})
+    @ExceptionHandler({ChallengeNotFoundException.class, UserNotFoundException.class, ParticipationNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleNotFound(
             RuntimeException ex, HttpServletRequest request) {
 
