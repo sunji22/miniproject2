@@ -29,10 +29,10 @@ public class SettlementScheduler {
 		// 종료일 이후 7일이 지났는지 확인
 		LocalDate sevenDaysAgo = LocalDate.now().minusDays(7);
 		
-		// 정산 대상 챌린지 조회 (종료일 지난 + 진행 중 + 정산 대기 / 일단 정산이 되어야지만 챌린지 상태가 CLOSED 된 상태로 생각하고 진행했습니다.)
+		// 정산 대상 챌린지 조회 (종료일 지난 + 마감된 챌린지 + 정산 대기)
 		List<Challenge> challenges = challengeRepository.findByEndDateBeforeAndStatusAndSettlementStatus(
 						sevenDaysAgo, 
-						ChallengeStatus.ONGOING, 
+						ChallengeStatus.CLOSED, 
 						SettlementStatus.PENDING
 		);
 		
