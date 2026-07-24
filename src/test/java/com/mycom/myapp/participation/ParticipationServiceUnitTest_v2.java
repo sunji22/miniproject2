@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -87,7 +88,8 @@ class ParticipationServiceUnitTest_v2 {
 
         // (then)
         assertThat(resultId).isEqualTo(10L);
-        verify(pointService).lockPoint(1L, 5000); // 보증금 잠금 실행 검증
+        // pointService 객체의 lockPoint 메서드가 첫 번째 인자로 1L, 두번째로 Participation 타입의 객체, 세 번째로 5000이라는 정확한 수치를 가지고 1회 호출되었는지 검증
+        verify(pointService).lockPoint(eq(1L), any(Participation.class), eq(5000)); // 보증금 잠금 실행 검증
         verify(participationRepository).save(any(Participation.class));
     }
 
@@ -109,7 +111,7 @@ class ParticipationServiceUnitTest_v2 {
         // (then)
         assertThat(resultId).isEqualTo(10L);
         assertThat(canceledParticipation.getStatus()).isEqualTo(ParticipationStatus.JOINED); // 상태 전이 검증
-        verify(pointService).lockPoint(1L, 5000);
+        verify(pointService).lockPoint(eq(1L), any(Participation.class), eq(5000));
         verify(participationRepository, never()).save(any()); // 기존 객체 변경이므로 save 미호출
     }
 
@@ -127,7 +129,7 @@ class ParticipationServiceUnitTest_v2 {
         assertThatThrownBy(() -> participationService.participate(100L, 1L))
                 .isInstanceOf(DuplicateParticipationException.class);
 
-        verify(pointService, never()).lockPoint(anyLong(), anyInt());
+        verify(pointService, never()).lockPoint(anyLong(), any(Participation.class), anyInt());
     }
 
     @Test
@@ -163,7 +165,7 @@ class ParticipationServiceUnitTest_v2 {
         assertThatThrownBy(() -> participationService.participate(100L, 1L))
                 .isInstanceOf(InsufficientPointException.class);
 
-        verify(pointService, never()).lockPoint(anyLong(), anyInt());
+        verify(pointService, never()).lockPoint(anyLong(), any(Participation.class), anyInt());
     }
 
     @Test
