@@ -107,7 +107,6 @@ public class ParticipationServiceImpl implements ParticipationService{
 		}
 		
 		// 잔액 검증 후 보증금 잠금
-		//   lockPoint 는 PointHistory.participation 연결을 위해 participation 을 받는다 (버그 K 수정분)
 		pointService.lockPoint(userId, participation, depositAmount);
 		log.info("[보증금 잠금 성공] user {} 보증금 {} 잠금", userId, depositAmount);
     

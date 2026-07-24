@@ -130,9 +130,6 @@ public class ChallengeController {
 	}
 	
 	// 내가 참여한 챌린지 목록 조회 (참여 챌린지 카드 화면)
-	//   반환은 ParticipantResponseDto(챌린지 안의 "참여자" 정보)가 아니라
-	//   MyParticipationResponseDto(내가 참여한 "챌린지" 정보)여야 한다.
-	//   -> 화면이 challengeTitle / challengeStatus / myStatus 로 카드를 그린다
 	@Operation(summary = "내가 참여한 챌린지 목록 조회")
 	@GetMapping("/my/participations")
 	public ResultDto<List<MyParticipationResponseDto>> listMyParticipation(

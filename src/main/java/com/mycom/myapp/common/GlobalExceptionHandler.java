@@ -261,15 +261,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
-    // ============================================================
-    // 프레임워크 예외 - 폴백(Exception.class)이 가로채 500 나던 것을 정상 상태코드로.
-    //   @RestControllerAdvice(ExceptionHandlerExceptionResolver)가
-    //   ResponseStatusExceptionResolver / DefaultHandlerExceptionResolver 보다 먼저 동작하므로,
-    //   아래 폴백에 이 예외들이 먼저 잡혀 500 으로 뭉개진다. 명시적으로 되살린다.
-    // ============================================================
-
-    // 그 예외가 스스로 들고 있는 상태코드를 존중
-    //   (예: ChallengeServiceImpl.updateChallenge 의 throw new ResponseStatusException(400, "챌린지의 ID가 없습니다."))
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatus(
             ResponseStatusException ex, HttpServletRequest request) {

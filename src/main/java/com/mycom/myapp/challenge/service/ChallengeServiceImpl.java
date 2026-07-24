@@ -118,7 +118,6 @@ public class ChallengeServiceImpl implements ChallengeService {
 		
 		log.info("유저 조회 완료: userId={}", user.getName());
 		// 4. 챌린지 엔티티 생성 및 저장/영속화
-		//    createdAt 은 Challenge 의 @CreationTimestamp 가 INSERT 시점에 자동 주입한다
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		
 		// 5. 챌린지 개설자는 개설과 동시에 자동 참여 (단일 트랜잭션 보장 - 보증금 차감 실패 시 챌린지 생성도 롤백)

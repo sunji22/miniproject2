@@ -44,8 +44,6 @@ public class ChallengeDto {
 	@NotNull(message = "종료일은 필수입니다.")
 	private LocalDate endDate; 
 	private ChallengeStatus status;	 // 등록 시에는 사용 x (Default: 모집중)
-	
-	// (일단은) Service 에서 현재시각 주입 -> 리팩토링 필요할듯
 	private LocalDateTime createdAt;
 	
 	// 추가: 상세페이지 응답 시 사용자의 참여 id 추가
@@ -71,7 +69,6 @@ public class ChallengeDto {
 	
 	// 🎯 DTO -> Entity 변환: 인스턴스 메서드 (toEntity)
     public Challenge toEntity(User user) {
-        // createdAt 은 넘기지 않는다 - Challenge 엔티티의 @CreationTimestamp 가 INSERT 시점에 채운다
         return Challenge.builder().id(this.getId())
         						.host(user)
         						.title(this.title)

@@ -60,7 +60,6 @@ public class SecurityConfig {
                         // 회원가입
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         // 정산 - 관리자만 (자금 조작 차단)
-                        //   settle/{id} 는 서비스에서 호스트 검증이 있어 authenticated 로 충분
                         .requestMatchers(HttpMethod.POST,
                                 "/api/settlements/penalty-all",
                                 "/api/settlements/refund",
