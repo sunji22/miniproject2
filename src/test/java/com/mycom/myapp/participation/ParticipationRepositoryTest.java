@@ -17,6 +17,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.user.entity.Role;
@@ -174,7 +175,7 @@ class ParticipationRepositoryTest {
         participationRepository.saveAll(participations);
 
         // when
-        List<Participation> results = participationRepository.findByChallenge_Id(challenge.getId());
+        List<Participation> results = participationRepository.findByChallenge_IdAndStatus(challenge.getId(), ParticipationStatus.JOINED);
         results.forEach(p -> p.getUser().getName()); // N+1 select 발생?
         // (확인) Hibernate: select p1_0.participation_id,p1_0.challenge_id,p1_0.created_at,p1_0.status,p1_0.success_count,p1_0.user_id,u1_0.user_id,u1_0.created_at,u1_0.email,u1_0.name,u1_0.password,u1_0.point_balance,u1_0.role from participation p1_0 join user u1_0 on u1_0.user_id=p1_0.user_id where p1_0.challenge_id=?
 

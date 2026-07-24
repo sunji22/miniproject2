@@ -18,11 +18,13 @@ import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.dto.ParticipantResponseDto;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.challenge.service.ParticipationService;
 import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
+import com.mycom.myapp.point.service.SettlementService;
 import com.mycom.myapp.user.entity.Role;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
@@ -33,6 +35,9 @@ class ParticipationServiceIntegrationTest {
 
     @Autowired
     private ParticipationService participationService;
+    
+    @Autowired
+    private SettlementService settlementService;
 
     @Autowired
     private UserRepository userRepository;
@@ -176,5 +181,64 @@ class ParticipationServiceIntegrationTest {
         assertThat(emptyResult)
                 .isNotNull()
                 .isEmpty();
+    }
+    
+    @Test
+    void 참여_취소_서비스_통합테스트() {
+        // (given) 위와 동일
+        // 1. 50명의 유저 생성 및 저장
+        List<User> users = IntStream.rangeClosed(1, 50)
+                .mapToObj(i -> {
+                    User user = new User();
+                    user.setEmail("test" + i + "@naver.com");
+                    user.setPassword("encryptedPassword123!");
+                    user.setName("테스트유저" + i);
+                    user.setRole(Role.USER);
+                    user.setPointBalance(10000);
+                    return user;
+                })
+                .toList();
+        userRepository.saveAll(users);
+
+        // 2. 챌린지 엔티티 생성 및 저장
+        Challenge challenge = Challenge.builder()
+                                    .host(users.get(0))
+                                    .title("매일 스쿼트 100개")
+                                    .depositAmount(5000)
+                                    .status(ChallengeStatus.RECRUITING)
+                                    .startDate(LocalDate.now().plusDays(3))
+                                    .endDate(LocalDate.now().plusDays(3).plusWeeks(1))
+                                    .createdAt(LocalDateTime.now())
+                                    .build();
+        challengeRepository.save(challenge);
+
+        // 3. 50명의 유저를 챌린지에 참여 엔티티로 매핑 및 저장
+        List<Participation> participations = users.stream()
+                .map(user -> Participation.createParticipation(user, challenge))
+                .toList();
+        participationRepository.saveAll(participations);
+
+        // 삭제할 타겟 설정 (2번째 유저 및 해당 참여 데이터)
+        Participation targetParticipation = participations.get(1);
+        User targetUser = users.get(1);
+
+        // (when)
+        // 참여 삭제 및 보증금 반환 로직 실행
+        int refundedAmount = participationService.deleteParticipation(targetParticipation.getId(), targetUser.getUserId());
+
+        // (then)
+        // 1. 서비스 반환값(환불된 보증금)이 챌린지 설정 금액과 일치하는지 검증
+        assertThat(refundedAmount).isEqualTo(challenge.getDepositAmount());
+
+        // 2. DB에서 해당 참여 엔티티가 실제로 삭제(status=CANCLED)되었는지 검증
+        Participation updatedParticipation = participationRepository.findById(targetParticipation.getId()).orElseThrow();
+        assertThat(updatedParticipation.getStatus()).isEqualTo(ParticipationStatus.CANCLED);
+
+        // 3. 전체 참여자 수가 50명에서 49명으로 감소했는지 및 취소 유저가 목록에서 제외되었는지 검증
+        List<ParticipantResponseDto> remainingParticipants = participationService.listParticipant(challenge.getId());
+        assertThat(remainingParticipants)
+                .hasSize(49)
+                .extracting("userName")
+                .doesNotContain(targetUser.getName());
     }
 }

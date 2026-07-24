@@ -11,4 +11,8 @@ public class InvalidChallengeStatusException extends RuntimeException {
     public InvalidChallengeStatusException() {
         super("모집 중인 챌린지만 수정할 수 있습니다.");
     }
+    
+    public InvalidChallengeStatusException(String msg) {
+        super(msg);
+    }
 }

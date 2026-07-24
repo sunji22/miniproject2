@@ -61,7 +61,8 @@ public class GlobalExceptionHandler {
     	InsufficientPointException.class,
     	InvalidChallengePeriodException.class,
     	ExceededRequiredCountException.class,
-    	InvalidChallengeStatusException.class
+    	InvalidChallengeStatusException.class,
+    	IllegalStateException.class
     })
     public ResponseEntity<ErrorResponse> handleInsufficientPoint(
             RuntimeException ex, HttpServletRequest request) {

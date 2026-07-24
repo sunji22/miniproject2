@@ -18,8 +18,9 @@ import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
 import com.mycom.myapp.challenge.entity.Participation;
+import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
-import com.mycom.myapp.common.ResultDto;
+import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.ExceededRequiredCountException;
@@ -40,6 +41,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
 	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기 ?
+	private final ParticipationRepository participationRepository;
 	
 	private final ParticipationService participationService;
 
@@ -75,15 +77,21 @@ public class ChallengeServiceImpl implements ChallengeService {
 									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
 		
-		// 사용자의 해당 챌린지 참여 id 찾기. 없으면 예외 던지는게 아니라 null 넣어서 응답해야 함.
-		try {
-			// 참여 정보 있으면 참여 id 넣어서 응답
-			Participation participation = participationService.detailParticipation(userId, id);
-			challengeDto.setParticipationId(participation.getId());
-		} catch (Exception e) {
-			// 없으면 참여 id=null 로 응답
+		// [ 사용자에 따라 참여 id 세팅하기 ]
+		
+		// 1. 미인증 사용자 (userId == null)
+		if(userId == null) {
 			challengeDto.setParticipationId(null);
+	        return challengeDto;
 		}
+		
+		// 2. 인증 사용자 - 참여 id
+		Long participationId = participationRepository
+	            .findByChallenge_IdAndUser_UserIdAndStatus(id, userId, ParticipationStatus.JOINED)
+	            .map(Participation::getId)
+	            // 미참여자 = null
+	            .orElse(null);
+		challengeDto.setParticipationId(participationId);
 		
 		return challengeDto;
 	}
