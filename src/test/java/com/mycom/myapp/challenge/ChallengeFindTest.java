@@ -58,15 +58,15 @@ public class ChallengeFindTest {
 		condition.setTitle("일찍 자기");
 		condition.setStatus(ChallengeStatus.RECRUITING);
 		
-		ResultDto<List<ChallengeDto>> result = challengeService.listChallenge(condition);
-		
-		log.info(result.getData().toString());
-		log.info("페이징 개수={}", result.getData().size());
-		
+		// 서비스는 raw data 를 반환한다 (ResultDto 래핑은 컨트롤러 책임)
+		List<ChallengeDto> result = challengeService.listChallenge(condition);
+
+		log.info(result.toString());
+		log.info("페이징 개수={}", result.size());
+
 		assertNotNull(challengeService);
 		assertNotNull(result);
-		assertEquals("success", result.getResult());
-		assertEquals(10, result.getData().size());
+		assertEquals(10, result.size());
 	}
 	
 	@Test
@@ -74,16 +74,15 @@ public class ChallengeFindTest {
 		log.info("상세 조회 테스트");
 		
 		Challenge entity = challengeRepository.findById(41L).get();
-		ResultDto<ChallengeDto> result = challengeService.detailChallenge(41L);
-		
+		ChallengeDto result = challengeService.detailChallenge(41L);
+
 		log.info("id={}, 제목={}", entity.getId(), entity.getTitle());
-		
+
 		assertNotNull(entity);
 		assertEquals(41L, entity.getId());
-		assertNotNull(result.getData());
-		assertEquals(41L, result.getData().getId());
-		assertEquals("success", result.getResult());
-		
+		assertNotNull(result);
+		assertEquals(41L, result.getId());
+
 	}
 	
 	@Test
