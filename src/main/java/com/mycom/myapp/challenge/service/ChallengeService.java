@@ -13,7 +13,7 @@ public interface ChallengeService {
 	List<ChallengeDto> listChallenge(ChallengeSearchConditionDto searchCondition);
 	
 	// 상세
-	ChallengeDto detailChallenge(Long id);
+	ChallengeDto detailChallenge(Long id, Long userId);
 	
 	// 등록
 	Long insertChallenge(ChallengeDto challengeDto, Long userId);

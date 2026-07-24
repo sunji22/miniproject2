@@ -17,6 +17,7 @@ import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
+import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.common.ResultDto;
 import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
@@ -38,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ChallengeServiceImpl implements ChallengeService {
 
 	private final ChallengeRepository challengeRepository;
-	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기
+	private final UserRepository userRepository; // -> UserService 로 결합도 낮추기 ?
 	
 	private final ParticipationService participationService;
 
@@ -69,10 +70,20 @@ public class ChallengeServiceImpl implements ChallengeService {
 
 	// 상세 조회
 	@Override
-	public ChallengeDto detailChallenge(Long id) {
+	public ChallengeDto detailChallenge(Long id, Long userId) {
 		Challenge challenge = challengeRepository.findById(id)
 									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
+		
+		// 사용자의 해당 챌린지 참여 id 찾기. 없으면 예외 던지는게 아니라 null 넣어서 응답해야 함.
+		try {
+			// 참여 정보 있으면 참여 id 넣어서 응답
+			Participation participation = participationService.detailParticipation(userId, id);
+			challengeDto.setParticipationId(participation.getId());
+		} catch (Exception e) {
+			// 없으면 참여 id=null 로 응답
+			challengeDto.setParticipationId(null);
+		}
 		
 		return challengeDto;
 	}

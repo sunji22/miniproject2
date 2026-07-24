@@ -48,8 +48,11 @@ public class ChallengeController {
 	
 	@Operation(summary = "챌린지 상세 조회")
 	@GetMapping("/{id}")
-	public ResultDto<ChallengeDto> detailChallenge(@PathVariable("id") Long id) {
-		ChallengeDto challengeDto = challengeService.detailChallenge(id);
+	public ResultDto<ChallengeDto> detailChallenge(
+				@PathVariable("id") Long id,
+				@AuthenticationPrincipal(expression = "id") Long userId
+			) {
+		ChallengeDto challengeDto = challengeService.detailChallenge(id, userId);
 		return ResultDto.success(challengeDto);
 	}
 	
