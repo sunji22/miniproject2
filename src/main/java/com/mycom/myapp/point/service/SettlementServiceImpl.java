@@ -1,6 +1,7 @@
 package com.mycom.myapp.point.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -15,8 +16,11 @@ import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
+import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
+import com.mycom.myapp.point.dto.SettlementPreviewResponseDto;
+import com.mycom.myapp.point.dto.SettlementPreviewResponseDto.ParticipantPreview;
 import com.mycom.myapp.point.entity.PointHistory;
 import com.mycom.myapp.point.entity.PointType;
 import com.mycom.myapp.point.repository.PointHistoryRepository;
@@ -85,7 +89,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 2. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 		
 		// 3. 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
@@ -125,7 +129,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 2. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 
 		// 3. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
@@ -156,7 +160,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 		// 1. 참여 정보 조회
 		Participation participation = participationRepository.findById(participationId)
-				.orElseThrow(() -> new IllegalArgumentException("참여 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new ParticipationNotFoundException(participationId));
 
 		// 2. 챌린지 조회 + 정산 여부 확인 (중복 정산 방지)
 		Challenge challenge = participation.getChallenge();
@@ -251,5 +255,90 @@ public class SettlementServiceImpl implements SettlementService {
 		List<PointType> types = List.of(PointType.PENALTY, PointType.REWARD, PointType.DEPOSIT_REFUND);
 		Integer amount = pointHistoryRepository.sumAmountByParticipation_Challenge_IdAndTypeIn(challengeId, types);
 		return (amount != null) ? amount : 0;
+	}
+
+	// #7. 정산 미리 보기 (읽기만 가능 - DB 변경 X)
+	@Override
+	@Transactional(readOnly=true)
+	public SettlementPreviewResponseDto previewSettlement(Long challengeId, Long userId) {
+		// 1. 챌린지 조회
+		Challenge challenge = challengeRepository.findById(challengeId)
+				.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
+		
+		// 2. 참여자 목록 조회
+		List<Participation> participants = participationRepository.findByChallenge_IdAndStatus(challengeId, ParticipationStatus.JOINED);
+		
+		// 3. 참여자 확인
+		boolean isParticipant = participants.stream().anyMatch(p -> p.getUser().getUserId().equals(userId));
+		
+		if (!isParticipant) {
+			throw new AccessDeniedException("참여자만 정산 미리보기를 볼 수 있습니다.");
+		}
+		
+		// 4. 성공자 / 실패자 판정
+		int successCount = 0;
+		int totalPenaltyAmount = 0;
+		
+		for (Participation p : participants) {
+			if(p.getSuccessCount() >= challenge.getRequiredCount()) {
+				successCount++;
+			} else {
+				totalPenaltyAmount += challenge.getDepositAmount();
+			}
+		}
+		
+		int failCount = participants.size() - successCount;
+		int rewardPerPerson = (successCount > 0) ? totalPenaltyAmount / successCount : 0;
+		
+		// 5. 참여자별 미리보기 계산
+		List<ParticipantPreview> previewList = new ArrayList<>();
+		
+		for(Participation p : participants) {
+			User user = userRepository.findById(p.getUser().getUserId())
+					.orElseThrow(() -> new UserNotFoundException(p.getUser().getUserId()));
+			
+			boolean isSuccess = p.getSuccessCount() >= challenge.getRequiredCount();
+			int currentBalance = user.getPointBalance();
+			
+			int refundAmount = 0;
+			int rewardAmount = 0;
+			int penaltyAmount = 0;
+			int expectedBalance = currentBalance;
+			
+			if (isSuccess) {
+				refundAmount = challenge.getDepositAmount();
+				rewardAmount = rewardPerPerson;
+				expectedBalance = currentBalance + refundAmount + rewardAmount;
+			} else { 
+				penaltyAmount = challenge.getDepositAmount();
+				expectedBalance = currentBalance;
+			}
+			
+			previewList.add(ParticipantPreview.builder()
+					.userId(user.getUserId())
+					.userName(user.getName())
+					.currentSuccessCount(p.getSuccessCount())
+					.success(isSuccess)
+					.refundAmount(refundAmount)
+					.rewardAmount(rewardAmount)
+					.penaltyAmount(penaltyAmount)
+					.currentBalance(currentBalance)
+					.expectedBalance(expectedBalance)
+					.build());
+		}
+		
+		// 6. 최종 DTO 반환
+		return SettlementPreviewResponseDto.builder()
+				.challengeId(challengeId)
+				.challengeTitle(challenge.getTitle())
+				.depositAmount(challenge.getDepositAmount())
+				.requiredCount(challenge.getRequiredCount())
+				.totalParticipants(participants.size())
+				.successCount(successCount)
+				.failCount(failCount)
+				.totalPenaltyAmount(totalPenaltyAmount)
+				.rewardPerPerson(rewardPerPerson)
+				.participants(previewList)
+				.build();
 	}
 }
