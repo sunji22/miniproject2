@@ -51,13 +51,25 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
                         // 정적 리소스/랜딩 - 로그인 없이 접근
                         .requestMatchers("/", "/index.html", "/assets/**", "/.well-known/**").permitAll()
+                        // 에러 디스패치 경로
+                        .requestMatchers("/error").permitAll()
                         // Swagger UI / OpenAPI 문서 - 로그인 없이 접근(팀 API 테스트)
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // 로그인/토큰 재발급 등 인증 엔드포인트
                         .requestMatchers("/api/auth/**").permitAll()
                         // 회원가입
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                        // 챌린지 공개 조회(GET)
+                        // 정산 - 관리자만 (자금 조작 차단)
+                        //   settle/{id} 는 서비스에서 호스트 검증이 있어 authenticated 로 충분
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/settlements/penalty-all",
+                                "/api/settlements/refund",
+                                "/api/settlements/penalty",
+                                "/api/settlements/reward").hasRole("ADMIN")
+                        // 참여 관련 조회는 인증 필요 (아래 공개 조회보다 먼저 와야 함)
+                        .requestMatchers(HttpMethod.GET, "/api/challenges/my/participations").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/challenges/*/participations").authenticated()
+                        // 챌린지 공개 조회(GET) - 목록/상세만
                         .requestMatchers(HttpMethod.GET, "/api/challenges/**").permitAll()
                         // 관리자 전용
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
