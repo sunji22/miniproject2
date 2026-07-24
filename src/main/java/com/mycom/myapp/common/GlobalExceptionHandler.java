@@ -10,12 +10,17 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.DuplicateVerificationException;
 import com.mycom.myapp.common.exception.EmailAlreadyExistsException;
+import com.mycom.myapp.common.exception.ExceededRequiredCountException;
 import com.mycom.myapp.common.exception.InsufficientPointException;
+import com.mycom.myapp.common.exception.InvalidChallengePeriodException;
+import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
 import com.mycom.myapp.common.exception.InvalidRefreshTokenException;
+import com.mycom.myapp.common.exception.NotChallengeHostException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 
@@ -50,9 +55,14 @@ public class GlobalExceptionHandler {
     }
 
     // 400 BAD_REQUEST : 포인트 부족 (참여 시 잔액 < 보증금)
-    @ExceptionHandler(InsufficientPointException.class)
+    @ExceptionHandler({
+    	InsufficientPointException.class,
+    	InvalidChallengePeriodException.class,
+    	ExceededRequiredCountException.class,
+    	InvalidChallengeStatusException.class
+    })
     public ResponseEntity<ErrorResponse> handleInsufficientPoint(
-            InsufficientPointException ex, HttpServletRequest request) {
+            RuntimeException ex, HttpServletRequest request) {
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
@@ -101,9 +111,12 @@ public class GlobalExceptionHandler {
     // 403 FORBIDDEN : 인가 실패 (권한 없음)
     //   메서드 보안(@PreAuthorize 등)에서 올라온 AccessDeniedException 을 여기서 응답으로 변환.
     //   (SecurityFilterChain 단계의 인가 실패는 AccessDeniedHandler 가 처리하므로 여기 안 옴)
-    @ExceptionHandler(AccessDeniedException.class)
+    @ExceptionHandler({
+    	AccessDeniedException.class,
+    	NotChallengeHostException.class
+    })
     public ResponseEntity<ErrorResponse> handleAccessDenied(
-            AccessDeniedException ex, HttpServletRequest request) {
+            RuntimeException ex, HttpServletRequest request) {
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
@@ -138,7 +151,8 @@ public class GlobalExceptionHandler {
             DuplicateParticipationException.class,
             DuplicateVerificationException.class,
             SettlementAlreadyDoneException.class,
-            EmailAlreadyExistsException.class
+            EmailAlreadyExistsException.class,
+            CannotDeleteOngoingChallengeException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(
             RuntimeException ex, HttpServletRequest request) {
