@@ -6,7 +6,7 @@ public class ParticipationNotFoundException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public ParticipationNotFoundException(Long participationId) {
-        super("해당 참여 기록이 없습니다. id=" + participationId);
+    public ParticipationNotFoundException(Long challengeId) {
+        super("해당 챌린지 참여 기록이 없습니다. id=" + challengeId);
     }
 }
