@@ -199,6 +199,7 @@ public class SettlementServiceImpl implements SettlementService {
 
 	// #4. 챌린지 정산(settleChallenge)
 	@Override
+	@Transactional
 	public void settleChallenge(Long challengeId, Long hostId) {
 		// 1. 챌린지 조회
 		Challenge challenge = challengeRepository.findById(challengeId)
