@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.mycom.myapp.common.exception.CannotDeleteOngoingChallengeException;
+import com.mycom.myapp.common.exception.ChallengeNotEndedException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.DuplicateParticipationException;
 import com.mycom.myapp.common.exception.DuplicateVerificationException;
@@ -164,12 +165,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
-    // 409 CONFLICT : 상태 충돌 (중복/재실행)
-    //   중복 참여, 중복 인증(하루 1회), 정산 재실행, 회원가입 이메일 중복 => 모두 409 로 통일
+    // 409 CONFLICT : 상태 충돌 (중복/재실행/지금은 할 수 없는 요청)
+    //   중복 참여, 중복 인증(하루 1회), 정산 재실행, 회원가입 이메일 중복,
+    //   아직 안 끝난 챌린지의 정산 요청 => 모두 409 로 통일
     @ExceptionHandler({
             DuplicateParticipationException.class,
             DuplicateVerificationException.class,
             SettlementAlreadyDoneException.class,
+            ChallengeNotEndedException.class,
             EmailAlreadyExistsException.class,
             CannotDeleteOngoingChallengeException.class
     })

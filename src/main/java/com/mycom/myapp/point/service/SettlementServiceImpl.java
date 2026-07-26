@@ -16,6 +16,7 @@ import com.mycom.myapp.challenge.entity.Participation;
 import com.mycom.myapp.challenge.entity.ParticipationStatus;
 import com.mycom.myapp.challenge.repository.ChallengeRepository;
 import com.mycom.myapp.challenge.repository.ParticipationRepository;
+import com.mycom.myapp.common.exception.ChallengeNotEndedException;
 import com.mycom.myapp.common.exception.ChallengeNotFoundException;
 import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.SettlementAlreadyDoneException;
@@ -212,6 +213,11 @@ public class SettlementServiceImpl implements SettlementService {
 		//    종료일 검사보다 먼저
 		if(challenge.getSettlementStatus() == SettlementStatus.SETTLED) {
 			throw new SettlementAlreadyDoneException(challengeId);
+		}
+
+		// 4. 챌린지가 끝났는지 확인
+		if(!challenge.getEndDate().isBefore(LocalDate.now())) {
+			throw new ChallengeNotEndedException(challengeId);
 		}
 
 		// 5. 참여자 목록 조회
