@@ -1,6 +1,5 @@
 package com.mycom.myapp.challenge.service;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,7 +132,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 		 * 검증
 		 * 1. required_count(최소인증횟수) 가 전체 기간보다 큰 경우
 		 * 2. 해당 요청자가 원래의 작성자(host_id) 인지
-		 * 3. 이미 진행 중인 챌린지는 수정 불가
+		 * 3. 모집중이 아닌 챌린지는 수정 불가
+		 * 4. 참여자가 없을 때만 전체 필드 수정 허용. 있는 경우 수정 필드 제한.
 		 */
 		// Bad Request
 		if(challengeDto.getId() == null) {
@@ -155,20 +155,38 @@ public class ChallengeServiceImpl implements ChallengeService {
 			throw new NotChallengeHostException();
 		}
 		
-		// (검증3) 이미 진행 중인 챌린지
-		ChallengeStatus status = challenge.getStatus();
-		if(status != ChallengeStatus.RECRUITING) {
+		// (검증3) 모집중이 아닌 챌린지
+		if(challenge.getStatus() != ChallengeStatus.RECRUITING) {
 			throw new InvalidChallengeStatusException();
 		}
 		
+		// (검증4) 참여자가 1명이라도 있으면, 핵심 조건의 수정은 엄격히 금지 (수정 필드를 제한)
+		// 참여자 수가 0명일 때만 전체 필드 수정 허용
+		// 제한 필드: 보증금, 시작일, 종료일, 인증 횟수
+		long count = participationRepository.countByChallenge_Id(challenge.getId());
+		
 		log.info("업데이트 전: {}", challenge.getTitle());
-		// Dirty Checking
+
+		// 참여자가 있고, 제한 필드 수정을 시도하면 -> 에러
+		if(count != 0) {
+			// 제한 필드(보증금, 시작일, 종료일, 인증 횟수) 중 하나라도 변경을 시도했는지 검증
+			if(isRestrictedFieldChanged(challenge, challengeDto)) {
+				// 임시 409 에러
+				throw new CannotDeleteOngoingChallengeException("챌린지 정보를 수정할 수 없다.");
+			}
+				
+		// 참여자가 없을 때만 제한 필드 수정
+		} else {
+			challenge.setDepositAmount(challengeDto.getDepositAmount());
+			challenge.setRequiredCount(challengeDto.getRequiredCount());
+			challenge.setStartDate(challengeDto.getStartDate());
+			challenge.setEndDate(challengeDto.getEndDate());			
+		}
+		
+		// 공통 수정 가능 필드
 		challenge.setTitle(challengeDto.getTitle());
 		challenge.setDescription(challengeDto.getDescription());
-		challenge.setDepositAmount(challengeDto.getDepositAmount());
-		challenge.setRequiredCount(challengeDto.getRequiredCount());
-		challenge.setStartDate(challengeDto.getStartDate());
-		challenge.setEndDate(challengeDto.getEndDate());
+		
 		log.info("업데이트 후: {}", challenge.getTitle());
 				
 		return challenge.getId();
@@ -180,23 +198,26 @@ public class ChallengeServiceImpl implements ChallengeService {
 		Challenge challenge = challengeRepository
 								.findById(challengeId)
 								.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
-		// 요청자=작성자 검증
+		// (검증1) 요청자=작성자
 		Long hostId = challenge.getHost().getUserId();
 		if(!userId.equals(hostId)) { // userId=요청자
 			throw new NotChallengeHostException();
 		}
 		
-		// 검증 : 진행중 챌린지 삭제 불가
+		// (검증2) 진행중 챌린지 삭제 불가
 		if(challenge.getStatus() == ChallengeStatus.ONGOING) {
 			throw new CannotDeleteOngoingChallengeException();
 		}
 		
-		// 삭제 시 필요한 추가적인 비즈니스 로직
-		// ...
+		// (검증3) 개설자 외 다른 참여자가 존재하는 경우 삭제 불가
+		boolean hasOtherParticipants = participationRepository
+				.existsByChallenge_IdAndUser_UserIdNotAndStatus(challengeId, userId, ParticipationStatus.JOINED);
+		if(hasOtherParticipants) {
+			throw new CannotDeleteOngoingChallengeException("다른 참여자가 존재하여 챌린지를 삭제할 수 없습니다.");
+		}
 		
+		// 개설자 본인 외 참여자가 없을 때만 삭제
 		challengeRepository.delete(challenge);
-		
-		//return ResultDto.success();
 	}
 	
 	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
@@ -204,5 +225,13 @@ public class ChallengeServiceImpl implements ChallengeService {
 		Challenge challenge = challengeRepository.findById(id)
 				.orElseThrow(() -> new ChallengeNotFoundException(id));
 		return challenge;
+	}
+	
+	// 제한 필드 변경 여부 확인 헬퍼 메서드
+	private boolean isRestrictedFieldChanged(Challenge entity, ChallengeDto dto) {
+		return entity.getDepositAmount() != dto.getDepositAmount()
+				|| entity.getRequiredCount() != dto.getRequiredCount()
+				|| !entity.getStartDate().equals(dto.getStartDate())
+				|| !entity.getEndDate().equals(dto.getEndDate());
 	}
 }

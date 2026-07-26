@@ -2,10 +2,12 @@ package com.mycom.myapp.challenge.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,8 @@ import org.springframework.data.repository.query.Param;
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
 import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.challenge.entity.Challenge;
+
+import jakarta.persistence.LockModeType;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
@@ -41,4 +45,9 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     @Modifying
     @Query("UPDATE Challenge c SET c.status = 'CLOSED' WHERE c.endDate < :now AND c.status = 'ONGOING'")
     int updateStatusToClosed(@Param("now") LocalDate now);
+    
+    // DB 수준의 쓰기 락 - 비관적 락(SELECT ... FOR UPDATE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Challenge c WHERE c.id = :id")
+    Optional<Challenge> findByIdWithLock(@Param("id") Long id);
 }

@@ -5,7 +5,6 @@ import java.util.List;
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
-import com.mycom.myapp.common.ResultDto;
 
 public interface ChallengeService {
 
