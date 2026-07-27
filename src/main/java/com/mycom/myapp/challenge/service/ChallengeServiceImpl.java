@@ -1,5 +1,6 @@
 package com.mycom.myapp.challenge.service;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,11 +128,17 @@ public class ChallengeServiceImpl implements ChallengeService {
 						.orElseThrow(() -> new UserNotFoundException(userId));
 		
 		log.info("유저 조회 완료: userId={}", user.getName());
+		
 		// 4. 챌린지 엔티티 생성 및 저장/영속화
 		Challenge challenge = challengeRepository.save(challengeDto.toEntity(user));
 		
 		// 5. 챌린지 개설자는 개설과 동시에 자동 참여 (단일 트랜잭션 보장 - 보증금 차감 실패 시 챌린지 생성도 롤백)
 		participationService.participate(challenge.getId(), userId);
+
+		// 당일을 시작일로 정한 챌린지는 바로 '진행중'으로 변경
+		if(LocalDate.now().equals(challenge.getStartDate())) {
+			challenge.setStatus(ChallengeStatus.ONGOING);
+		}
 		
 		return challenge.getId();
 	}
