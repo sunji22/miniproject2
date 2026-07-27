@@ -169,3 +169,7 @@ WHERE p.participation_id IN (9, 10, 11, 12, 13);
 ```
 
 ---
+
+## ⚠️ `sql/challenge` (프로젝트 루트의 별도 파일 — 이 폴더 아님)
+
+`../sql/challenge` 는 **독립 divergent 스크립트**다. `db/schema.sql` 초기화 파이프라인과 **함께 실행하지 말 것** (`challenge` 테이블 중복 정의 → 충돌).
