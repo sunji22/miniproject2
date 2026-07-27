@@ -35,20 +35,19 @@
   --font-mono: "SF Mono", "JetBrains Mono", "D2Coding", "Consolas", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper:      #17161a;
-    --paper-2:    #1e1d22;
-    --paper-edge: #23222a;
-    --ink:        #eae7df;
-    --ink-soft:   #b0ada4;
-    --ink-faint:  #6b6860;
-    --success:    #4bbf83;
-    --danger:     #e5674f;
-    --reward:     #e0b34a;
-    --info:       #6ba0d8;
-    --shadow-paper: 0 1px 0 var(--paper-edge), 0 8px 22px rgba(0,0,0,.5);
-  }
+/* 다크 테마: 기본은 라이트(감열지). 헤더 토글이 <html data-theme="dark"> 부여 시 적용. */
+:root[data-theme="dark"] {
+  --paper:      #17161a;
+  --paper-2:    #1e1d22;
+  --paper-edge: #23222a;
+  --ink:        #eae7df;
+  --ink-soft:   #b0ada4;
+  --ink-faint:  #6b6860;
+  --success:    #4bbf83;
+  --danger:     #e5674f;
+  --reward:     #e0b34a;
+  --info:       #6ba0d8;
+  --shadow-paper: 0 1px 0 var(--paper-edge), 0 8px 22px rgba(0,0,0,.5);
 }
 
 /* ---- reset-ish ---- */

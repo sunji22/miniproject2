@@ -7,6 +7,18 @@
 (function () {
   'use strict';
 
+  // ---------- 테마 (라이트 기본 + 수동 토글) ----------
+  const THEME_KEY = 'theme';
+  function currentTheme() { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; }
+  function applyTheme(t) { document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light'); }
+  function toggleTheme() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+    return next;
+  }
+  applyTheme(currentTheme()); // 스크립트 로드 즉시 적용
+
   const TOKEN_KEY = 'accessToken';
   const REFRESH_KEY = 'refreshToken';
   const NAME_KEY = 'userName';
@@ -219,8 +231,10 @@
       <div id="appbar-right"></div>`;
 
     const right = host.querySelector('#appbar-right');
+    const themeBtnHtml = `<button class="btn btn--ghost btn--sm" id="theme-btn" title="테마 전환" style="margin-left:8px">${currentTheme() === 'dark' ? '☀ 라이트' : '☾ 다크'}</button>`;
     if (authed) {
       right.innerHTML = `<span class="wallet-badge" id="wallet-badge">…</span>
+        ${themeBtnHtml}
         <button class="btn btn--ghost btn--sm" id="logout-btn" style="margin-left:8px">로그아웃</button>`;
       right.querySelector('#logout-btn').onclick = () => { session.clear(); location.href = '/'; };
       // 잔액 배지
@@ -232,8 +246,10 @@
         if (badge) badge.textContent = '';
       }
     } else {
-      right.innerHTML = `<a class="btn btn--ghost btn--sm" href="/auth/login.html">로그인</a>`;
+      right.innerHTML = `${themeBtnHtml}<a class="btn btn--ghost btn--sm" href="/auth/login.html" style="margin-left:8px">로그인</a>`;
     }
+    const tbtn = right.querySelector('#theme-btn');
+    if (tbtn) tbtn.onclick = () => { const t = toggleTheme(); tbtn.textContent = t === 'dark' ? '☀ 라이트' : '☾ 다크'; };
   }
 
   function requireAuth() {
@@ -254,5 +270,6 @@
     won, signed, signClass, fmtDate, fmtDateTime, agoText, todayISO,
     CHALLENGE_STATUS, PARTICIPATION_STATUS, POINT_TYPE, statusStamp,
     el, esc, toast, printIn, mountHeader, requireAuth, qs,
+    currentTheme, toggleTheme, applyTheme,
   };
 })();
