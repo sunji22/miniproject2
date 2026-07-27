@@ -64,33 +64,12 @@
 
 /* ===== Dashboard ===== */
 .dashboard-welcome {
-  background: linear-gradient(120deg, var(--primary-light) 0%, var(--primary) 50%, #3A3280 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-radius: var(--radius-2xl);
-  padding: var(--space-9) var(--space-10);
+  padding: var(--space-8) var(--space-10);
   color: #fff;
   margin-bottom: var(--space-6);
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
   box-shadow: 0 12px 32px rgba(69, 63, 196, 0.28);
-}
-.dashboard-welcome::after,
-.dashboard-welcome::before {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  z-index: -1;
-  pointer-events: none;
-}
-.dashboard-welcome::after {
-  top: -70px; right: -50px;
-  width: 180px; height: 180px;
-  background: rgba(255, 255, 255, 0.1);
-}
-.dashboard-welcome::before {
-  bottom: -90px; left: -40px;
-  width: 160px; height: 160px;
-  background: rgba(255, 255, 255, 0.06);
 }
 .dashboard-welcome h2 { font-size: 1.75rem; font-weight: 800; margin-bottom: var(--space-2); position: relative; letter-spacing: -0.03em; }
 .dashboard-welcome p { opacity: 0.85; font-size: 0.9375rem; position: relative; }
@@ -575,7 +554,7 @@
   .challenge-detail-header { padding: var(--space-6); }
   .challenge-detail-title { font-size: 1.375rem; }
   .point-actions { grid-template-columns: 1fr; }
-  .auth-card { padding: var(--space-7) var(--space-5); }
+  .auth-card { padding: var(--space-6) var(--space-5); }
   .dashboard-welcome { padding: var(--space-6); }
   .point-balance-card { padding: var(--space-8) var(--space-5); }
   .point-balance-value { font-size: 2.25rem; }

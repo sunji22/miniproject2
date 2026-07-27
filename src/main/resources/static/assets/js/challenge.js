@@ -146,7 +146,7 @@ const Challenge = {
             ${canJoin ? `<button class="btn btn-primary btn-lg" onclick="Challenge.join(${c.id})">${Icon.svg('plus', 16)} 참여하기</button>` : ''}
             ${canCancel ? `<button class="btn btn-outline btn-lg" onclick="Challenge.cancel(${c.participationId}, ${c.id})">${Icon.svg('x', 16)} 참여 취소</button>` : ''}
             <div class="challenge-actions-right">
-              <button class="btn btn-success" onclick="Settlement.executeSettle(${c.id})">${Icon.svg('check', 15)} 정산 실행</button>
+              <button class="btn btn-success" onclick="Settlement.showPreviewModal(${c.id})">${Icon.svg('check', 15)} 정산 미리보기</button>
               <button class="btn btn-secondary" onclick="window.location.hash='#/settlement/${c.id}'">${Icon.svg('chart', 15)} 정산 결과</button>
             </div>
           </div>
@@ -177,6 +177,7 @@ const Challenge = {
         </div>
 
         <div id="challenge-modal"></div>
+        <div id="settlement-modal"></div>
       `;
 
       this._current = c;

@@ -1,16 +1,105 @@
 /* ===== 정산 ===== */
 
 const Settlement = {
-  async executeSettle(challengeId) {
+  async showPreviewModal(challengeId) {
+    let data;
+    try {
+      const res = await API.get(`/settlements/preview/${challengeId}`);
+      data = res.data;
+    } catch (error) {
+      if (error.status === 409) {
+        Toast.show('이미 정산이 완료된 챌린지입니다.', 'warning');
+        window.location.hash = `#/settlement/${challengeId}`;
+      } else {
+        Toast.show(error.message || '정산 미리보기를 불러오지 못했습니다.', 'error');
+      }
+      return;
+    }
+
+    const mount = document.getElementById('settlement-modal');
+    if (!mount) return;
+
+    const statusBanner = data.settleable
+      ? `<div class="badge badge-success" style="font-size:0.8125rem;padding:6px 14px;">${Icon.svg('check', 13)} 지금 정산할 수 있습니다</div>`
+      : `<div class="badge badge-warning" style="font-size:0.8125rem;padding:6px 14px;">${Icon.svg('clock', 13)} 아직 정산할 수 없습니다 (종료일 ${Utils.formatDate(data.endDate)})</div>`;
+
+    mount.innerHTML = `
+      <div class="modal-overlay" onclick="Settlement.closeModal(event)">
+        <div class="modal" style="max-width:600px;" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h2 class="modal-title">정산 미리보기</h2>
+            <button class="modal-close" onclick="Settlement.closeModal()">${Icon.svg('x', 16)}</button>
+          </div>
+          <div class="modal-body">
+            ${statusBanner}
+            <div class="settlement-stats" style="grid-template-columns:repeat(4, 1fr); margin-top:var(--space-4);">
+              <div class="settlement-stat">
+                <div class="settlement-stat-value">${data.totalParticipants}</div>
+                <div class="settlement-stat-label">총 참여자</div>
+              </div>
+              <div class="settlement-stat">
+                <div class="settlement-stat-value text-success">${data.successCount}</div>
+                <div class="settlement-stat-label">성공 예상</div>
+              </div>
+              <div class="settlement-stat">
+                <div class="settlement-stat-value text-danger">${data.failCount}</div>
+                <div class="settlement-stat-label">실패 예상</div>
+              </div>
+              <div class="settlement-stat">
+                <div class="settlement-stat-value text-primary">${Utils.formatCurrency(data.rewardPerPerson)}</div>
+                <div class="settlement-stat-label">인당 보상(P)</div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+              ${(data.participants || []).map(p => `
+                <div class="settlement-detail-row">
+                  <span>
+                    <span class="font-bold">${Utils.escapeHtml(p.userName)}</span>
+                    <span class="text-muted" style="font-size:0.8rem;"> · 인정 ${p.currentSuccessCount}회</span>
+                  </span>
+                  <span class="flex items-center gap-2">
+                    <span class="badge ${p.success ? 'badge-success' : 'badge-danger'}">${p.success ? '성공' : '실패'}</span>
+                    <span class="font-bold ${p.success ? 'text-success' : 'text-danger'}">
+                      ${p.success ? '+' + Utils.formatCurrency(p.refundAmount + p.rewardAmount) : '-' + Utils.formatCurrency(p.penaltyAmount)}P
+                    </span>
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="Settlement.closeModal()">닫기</button>
+            ${data.host ? `<button type="button" class="btn btn-success" id="settlement-execute-btn" ${data.settleable ? '' : 'disabled'} onclick="Settlement.confirmExecute(${challengeId})">${Icon.svg('check', 15)} 지금 정산하기</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  async confirmExecute(challengeId) {
     if (!confirm('정산을 실행하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+
+    const btn = document.getElementById('settlement-execute-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loading-spinner"></span> 처리 중...'; }
 
     try {
       await API.post(`/settlements/settle/${challengeId}`, {});
       Toast.show('정산이 완료되었습니다!', 'success');
+      this.closeModal();
       window.location.hash = `#/settlement/${challengeId}`;
     } catch (error) {
       Toast.show(error.message || '정산에 실패했습니다.', 'error');
+      if (btn) { btn.disabled = false; btn.innerHTML = `${Icon.svg('check', 15)} 지금 정산하기`; }
     }
+  },
+
+  closeModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    const mount = document.getElementById('settlement-modal');
+    if (mount) mount.innerHTML = '';
   },
 
   async renderResult(main, challengeId) {
