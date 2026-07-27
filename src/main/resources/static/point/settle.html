@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>정산 예정서 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:24px">
+    <div id="root" style="width:520px;max-width:92vw"></div>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, won, signed, signClass, fmtDate, mountHeader, requireAuth, toast, qs, printIn } = App;
+    mountHeader();
+    if (!requireAuth()) throw new Error('redirecting');
+
+    const challengeId = qs('challengeId');
+
+    async function load() {
+      const root = document.getElementById('root');
+      root.innerHTML = '';
+      if (!challengeId) { root.innerHTML = '<div class="empty">챌린지 정보가 없습니다.</div>'; return; }
+      let p;
+      try {
+        p = await api.get('/api/settlements/preview/' + challengeId);
+      } catch (e) { root.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+      render(p);
+    }
+
+    function participantRow(pt, requiredCount) {
+      // net 은 DTO에 없음 → 클라 계산 (환불 + 보상 − 몰수)
+      const net = (pt.refundAmount || 0) + (pt.rewardAmount || 0) - (pt.penaltyAmount || 0);
+      const cls = signClass(net);
+      const detail = pt.success
+        ? `환불 +${won(pt.refundAmount)} · 상금 +${won(pt.rewardAmount)}`
+        : `몰수 −${won(pt.penaltyAmount)}`;
+      return `
+        <div class="settle-row">
+          <span class="name">${esc(pt.userName)}
+            <span class="mono muted">${pt.currentSuccessCount}/${requiredCount}회</span>
+            <span class="stamp ${pt.success ? 'stamp--success' : 'stamp--failed'}">${pt.success ? '성공' : '실패'}</span>
+          </span>
+          <span class="net ${cls}">${signed(net)}</span>
+          <span class="detail">${detail}</span>
+        </div>`;
+    }
+
+    function render(p, settled) {
+      const root = document.getElementById('root');
+      const rows = (p.participants || []).map((pt) => participantRow(pt, p.requiredCount)).join('');
+      const receipt = el(`
+        <article class="receipt receipt--wide">
+          <div class="receipt__head">정산 예정서<span class="receipt__no">#CH-${String(p.challengeId).padStart(4,'0')}</span></div>
+          <div style="text-align:center;margin:4px 0">
+            ${settled ? '<span class="stamp stamp--settled stamp--big stamp-pop">정산완료</span>'
+                      : '<span class="stamp stamp--closed">정산대기</span>'}
+          </div>
+          <div class="receipt__sub">${esc(p.challengeTitle)} · ${fmtDate(p.endDate)} 종료</div>
+          <hr class="rule" />
+          <div class="li"><span class="li__label">보증금</span><span class="li__dots"></span><span class="li__val">${won(p.depositAmount)}</span></div>
+          <div class="li"><span class="li__label">인증목표</span><span class="li__dots"></span><span class="li__val">${p.requiredCount} 회</span></div>
+          <div class="li"><span class="li__label">참여 / 성공 / 실패</span><span class="li__dots"></span><span class="li__val">${p.totalParticipants} / ${p.successCount} / ${p.failCount}</span></div>
+          <hr class="rule" />
+          <div class="li li--total"><span class="li__label neg">몰수 팟</span><span class="li__dots"></span><span class="li__val neg">${won(p.totalPenaltyAmount)}</span></div>
+          <div class="li"><span class="li__label gold">1인 분배</span><span class="li__dots"></span><span class="li__val gold">${won(p.rewardPerPerson)}</span></div>
+          <hr class="rule rule--solid" />
+          <div id="rows">${rows}</div>
+          <div id="mynet"></div>
+          <div class="actions" id="actions"></div>
+          <div class="barcode" style="margin-top:14px"></div>
+          <div class="barcode__no">SETTLEMENT</div>
+        </article>`);
+      root.innerHTML = '';
+      root.appendChild(receipt);
+      printIn(receipt);
+
+      // 정산 실행 버튼: host && settleable && 미정산
+      const actions = receipt.querySelector('#actions');
+      if (!settled && p.host && p.settleable) {
+        const btn = el('<button class="btn btn--gold">정산하기</button>');
+        btn.onclick = () => settle(p);
+        actions.appendChild(btn);
+      } else if (!settled && p.host && !p.settleable) {
+        actions.appendChild(el('<div class="muted" style="text-align:center;width:100%">아직 정산할 수 없습니다 (종료 후 가능).</div>'));
+      }
+    }
+
+    async function settle(p) {
+      if (!confirm('정산을 실행합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+      try {
+        await api.post('/api/settlements/settle/' + p.challengeId, null);
+        toast('정산 완료!', 'ok');
+        // 결과 재조회 + 내 net 강조
+        const preview = await api.get('/api/settlements/preview/' + p.challengeId);
+        render(preview, true);
+        try {
+          const result = await api.get('/api/settlements/result/' + p.challengeId);
+          showMyNet(result);
+        } catch (_) { /* result 없을 수 있음 */ }
+        mountHeader();
+      } catch (e) {
+        toast(e.status === 409 ? '이미 정산된 챌린지입니다.' : e.message, 'err');
+      }
+    }
+
+    function showMyNet(result) {
+      const host = document.getElementById('mynet');
+      if (!host || !result) return;
+      const cls = signClass(result.amount);
+      host.innerHTML = `<hr class="rule" /><div class="my-net ${cls}">내 정산 ${signed(result.amount)}</div>
+        <div class="li"><span class="li__label">정산 후 잔액</span><span class="li__dots"></span><span class="li__val">${won(result.balanceAfter)}</span></div>`;
+    }
+
+    load();
+  </script>
+</body>
+</html>

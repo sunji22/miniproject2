@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 지갑 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:24px">
+    <article class="receipt receipt--wide" id="wallet">
+      <div class="receipt__head">내 지갑<span class="receipt__no">POINT LEDGER</span></div>
+      <hr class="rule rule--solid" />
+      <div class="li li--total"><span class="li__label">잔액</span><span class="li__dots"></span><span class="li__val" id="balance">…</span></div>
+      <div class="actions">
+        <button class="btn btn--sm" id="charge-btn">＋ 충전</button>
+        <button class="btn btn--sm btn--ghost" id="withdraw-btn">－ 출금</button>
+      </div>
+      <hr class="rule" />
+      <div style="font-weight:700;margin-bottom:6px">거래 내역</div>
+      <ul class="ledger" id="ledger"><li>불러오는 중…</li></ul>
+      <div class="empty" id="empty" style="display:none">거래 내역이 없습니다.</div>
+      <div class="barcode" style="margin-top:14px"></div>
+      <div class="barcode__no">THANK YOU</div>
+    </article>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, won, signed, signClass, fmtDate, POINT_TYPE, mountHeader, requireAuth, toast, printIn } = App;
+    mountHeader('/point/wallet.html');
+    if (!requireAuth()) throw new Error('redirecting');
+
+    async function loadBalance() {
+      try {
+        const b = await api.get('/api/points/balance');
+        document.getElementById('balance').textContent = won(b && b.balance);
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    async function loadHistory() {
+      const ul = document.getElementById('ledger');
+      const emptyEl = document.getElementById('empty');
+      ul.innerHTML = ''; emptyEl.style.display = 'none';
+      try {
+        const items = await api.get('/api/points/history');
+        if (!items || items.length === 0) { ul.style.display = 'none'; emptyEl.style.display = 'block'; return; }
+        ul.style.display = '';
+        items.forEach((h) => ul.appendChild(rowItem(h)));
+      } catch (e) { ul.innerHTML = `<li>${esc(e.message)}</li>`; }
+    }
+
+    function rowItem(h) {
+      const meta = POINT_TYPE[h.type] || { label: h.type };
+      return el(`
+        <li>
+          <span class="date">${fmtDate(h.createdAt)}</span>
+          <span class="type-badge ${signClass(h.amount)}">${esc(meta.label)}</span>
+          <span class="${signClass(h.amount)}">${signed(h.amount)}</span>
+          <span class="after">▸ ${won(h.balanceAfter)}</span>
+        </li>`);
+    }
+
+    async function ask(action) {
+      const raw = prompt(`${action === 'charge' ? '충전' : '출금'}할 금액(P)을 입력하세요`, '10000');
+      if (raw == null) return;
+      const amount = Number(raw);
+      if (!(amount > 0)) { toast('올바른 금액을 입력하세요.', 'err'); return; }
+      try {
+        await api.post('/api/points/' + (action === 'charge' ? 'charge' : 'withdraw'), { amount });
+        toast(action === 'charge' ? '충전 완료' : '출금 완료', 'ok');
+        await loadBalance();
+        await loadHistory();
+        printIn(document.getElementById('ledger').firstElementChild);
+        mountHeader('/point/wallet.html'); // 헤더 잔액 갱신
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    document.getElementById('charge-btn').onclick = () => ask('charge');
+    document.getElementById('withdraw-btn').onclick = () => ask('withdraw');
+
+    loadBalance();
+    loadHistory();
+  </script>
+</body>
+</html>

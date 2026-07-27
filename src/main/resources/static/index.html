@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>보증금 챌린지 — 돈 걸고 갓생</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h1 class="page-title">진행중인 챌린지</h1>
+      <div class="appbar__spacer"></div>
+      <a class="btn btn--sm" id="create-btn" href="/challenge/create.html" style="display:none">+ 챌린지 개설</a>
+    </div>
+    <p class="muted">"돈 걸고 갓생" — 보증금 걸고 매일 인증, 실패 시 몰수·성공 시 분배.</p>
+
+    <div class="chip-tabs" id="filters">
+      <button class="chip" data-status="" aria-selected="true">전체</button>
+      <button class="chip" data-status="RECRUITING">모집중</button>
+      <button class="chip" data-status="ONGOING">진행중</button>
+      <button class="chip" data-status="CLOSED">종료</button>
+    </div>
+
+    <div class="grid" id="list"></div>
+    <div class="empty" id="empty" style="display:none">표시할 챌린지가 없습니다.</div>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, won, agoText, statusStamp, mountHeader, session, toast } = App;
+    let status = '';
+
+    async function load() {
+      const listEl = document.getElementById('list');
+      const emptyEl = document.getElementById('empty');
+      listEl.innerHTML = '';
+      emptyEl.style.display = 'none';
+      try {
+        const q = new URLSearchParams({ page: 0, size: 50 });
+        if (status) q.set('status', status);
+        const items = await api.get('/api/challenges?' + q.toString());
+        if (!items || items.length === 0) { emptyEl.style.display = 'block'; return; }
+        items.forEach((c) => listEl.appendChild(card(c)));
+      } catch (e) {
+        toast(e.message, 'err');
+      }
+    }
+
+    function card(c) {
+      const node = el(`
+        <article class="receipt card-receipt" role="button" tabindex="0">
+          <div class="receipt__head">${esc(c.title)}
+            <span class="receipt__no">#CH-${String(c.id).padStart(4, '0')}</span>
+          </div>
+          <div style="text-align:center;margin-bottom:6px">${statusStamp(c.status)}</div>
+          <hr class="rule" />
+          <div class="li"><span class="li__label">보증금</span><span class="li__dots"></span><span class="li__val">${won(c.depositAmount)}</span></div>
+          <div class="li"><span class="li__label">인증목표</span><span class="li__dots"></span><span class="li__val">${c.requiredCount} 회</span></div>
+          <div class="li"><span class="li__label">기간</span><span class="li__dots"></span><span class="li__val">${App.fmtDate(c.startDate)}~${App.fmtDate(c.endDate).slice(5)}</span></div>
+          <hr class="rule" />
+          <div class="muted" style="text-align:center">${esc(agoText(c.endDate))}</div>
+        </article>`);
+      const go = () => (location.href = `/challenge/detail.html?id=${c.id}`);
+      node.addEventListener('click', go);
+      node.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } });
+      return node;
+    }
+
+    document.getElementById('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      document.querySelectorAll('#filters .chip').forEach((c) => c.setAttribute('aria-selected', 'false'));
+      btn.setAttribute('aria-selected', 'true');
+      status = btn.dataset.status;
+      load();
+    });
+
+    mountHeader('/');
+    if (session.isAuthed) document.getElementById('create-btn').style.display = '';
+    load();
+  </script>
+</body>
+</html>

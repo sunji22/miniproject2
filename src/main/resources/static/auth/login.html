@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:40px">
+    <form class="receipt" id="form" autocomplete="on">
+      <div class="receipt__head">※ 청산위원회<span class="receipt__no">ADMISSION TICKET</span></div>
+      <div class="perf">· · · · · · · · · · · · ·</div>
+      <hr class="rule" />
+      <div class="field">
+        <label for="email">이메일</label>
+        <input type="email" id="email" name="email" required placeholder="hong@test.com" />
+      </div>
+      <div class="field">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" required placeholder="password123" />
+      </div>
+      <div class="err-text" id="err"></div>
+      <button class="btn" type="submit" id="submit">발권 (로그인)</button>
+      <hr class="rule" />
+      <div class="muted" style="text-align:center">처음이세요? <a href="/auth/register.html">회원가입 ›</a></div>
+    </form>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, session, mountHeader, qs, toast } = App;
+    mountHeader();
+    if (session.isAuthed) location.href = '/';
+
+    const form = document.getElementById('form');
+    const errEl = document.getElementById('err');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.textContent = '';
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) { errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+      const btn = document.getElementById('submit');
+      btn.disabled = true; btn.textContent = '발권 중…';
+      try {
+        const data = await api.post('/api/auth/login', { email, password });
+        session.save(data);
+        toast('로그인 완료', 'ok');
+        const redirect = qs('redirect');
+        location.href = redirect ? decodeURIComponent(redirect) : '/';
+      } catch (ex) {
+        errEl.textContent = ex.message;
+        btn.disabled = false; btn.textContent = '발권 (로그인)';
+      }
+    });
+  </script>
+</body>
+</html>

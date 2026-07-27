@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오늘의 인증 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:24px">
+    <form class="receipt" id="form">
+      <div class="receipt__head">오늘의 인증<span class="receipt__no" id="today"></span></div>
+      <hr class="rule" />
+      <div class="field">
+        <label for="imageUrl">이미지 URL</label>
+        <input type="url" id="imageUrl" required placeholder="https://…/proof.jpg" />
+        <span class="hint">※ 파일 업로드는 아직 미지원 — 이미지 URL을 붙여넣으세요.</span>
+      </div>
+      <div class="field">
+        <label for="content">내용</label>
+        <textarea id="content" rows="3" placeholder="오늘 한 일을 적어주세요"></textarea>
+      </div>
+      <div class="err-text" id="err"></div>
+      <button class="btn" type="submit" id="submit">인증 제출</button>
+    </form>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, mountHeader, requireAuth, toast, qs, todayISO } = App;
+    mountHeader();
+    if (!requireAuth()) throw new Error('redirecting');
+
+    const challengeId = qs('challengeId');
+    document.getElementById('today').textContent = todayISO();
+
+    const form = document.getElementById('form');
+    const errEl = document.getElementById('err');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.textContent = '';
+      if (!challengeId) { errEl.textContent = '챌린지 정보가 없습니다.'; return; }
+      const imageUrl = document.getElementById('imageUrl').value.trim();
+      const content = document.getElementById('content').value.trim();
+      if (!imageUrl) { errEl.textContent = '이미지 URL을 입력하세요.'; return; }
+      const btn = document.getElementById('submit');
+      btn.disabled = true;
+      try {
+        await api.post('/api/verifications', { challengeId: Number(challengeId), imageUrl, content });
+        toast('인증 완료!', 'ok');
+        location.href = '/challenge/verify-list.html?challengeId=' + challengeId;
+      } catch (ex) {
+        errEl.textContent = ex.status === 409 ? '오늘은 이미 인증했어요.' : ex.message;
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

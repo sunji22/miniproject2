@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>인증글 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap" style="padding-top:16px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <h1 class="page-title">인증글 · 상호체크</h1>
+      <div class="appbar__spacer"></div>
+      <a class="btn btn--sm" id="add" href="#">+ 오늘 인증</a>
+    </div>
+    <p class="muted">다른 참여자의 인증에 도장을 찍어주세요. 목표 확인 수를 채우면 성공으로 인정됩니다.</p>
+    <div class="stack" id="list" style="max-width:520px;margin:16px auto"></div>
+    <div class="empty" id="empty" style="display:none">아직 인증글이 없습니다.</div>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, fmtDate, fmtDateTime, mountHeader, requireAuth, toast, qs, printIn } = App;
+    mountHeader();
+    if (!requireAuth()) throw new Error('redirecting');
+
+    const challengeId = qs('challengeId');
+    document.getElementById('add').href = '/challenge/verify.html?challengeId=' + challengeId;
+
+    async function load() {
+      const listEl = document.getElementById('list');
+      const emptyEl = document.getElementById('empty');
+      listEl.innerHTML = ''; emptyEl.style.display = 'none';
+      if (!challengeId) { emptyEl.textContent = '챌린지 정보가 없습니다.'; emptyEl.style.display = 'block'; return; }
+      try {
+        const items = await api.get('/api/verifications?challengeId=' + encodeURIComponent(challengeId));
+        if (!items || items.length === 0) { emptyEl.style.display = 'block'; return; }
+        items.forEach((v) => listEl.appendChild(proof(v)));
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    function proof(v) {
+      const done = v.checkCount >= v.requiredChecks && v.requiredChecks > 0;
+      const node = el(`
+        <div class="proof">
+          <div class="proof__meta">@${esc(v.userName)} · ${fmtDate(v.verifiedDate)}
+            ${v.succeeded ? '<span class="stamp stamp--success" style="margin-left:6px">성공 ✔</span>' : ''}
+          </div>
+          ${v.imageUrl ? `<img class="proof__img" src="${esc(v.imageUrl)}" alt="인증 이미지" onerror="this.style.display='none'"/>` : ''}
+          <div>${esc(v.content || '')}</div>
+          <hr class="rule" />
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="mono muted">확인 ${v.checkCount}/${v.requiredChecks}명</span>
+            <div class="appbar__spacer"></div>
+            <button class="btn btn--sm ${v.checkedByMe ? 'btn--ghost' : ''}" ${v.mine || v.checkedByMe ? 'disabled' : ''}>
+              ${v.mine ? '내 인증글' : v.checkedByMe ? '확인함 ✔' : '도장 찍기 🖈'}
+            </button>
+          </div>
+        </div>`);
+      const btn = node.querySelector('button');
+      if (!v.mine && !v.checkedByMe) {
+        btn.onclick = async () => {
+          btn.disabled = true;
+          try {
+            await api.post(`/api/verifications/${v.id}/check`, null);
+            toast('도장 찍기 완료', 'ok');
+            load();
+          } catch (e) {
+            toast(e.status === 409 ? '이미 확인했습니다.' : e.message, 'err');
+            btn.disabled = false;
+          }
+        };
+      }
+      printIn(node);
+      return node;
+    }
+
+    load();
+  </script>
+</body>
+</html>

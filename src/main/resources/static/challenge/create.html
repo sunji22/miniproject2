@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>챌린지 개설 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:24px">
+    <form class="receipt" id="form">
+      <div class="receipt__head" id="head">※ 새 영수증 발행</div>
+      <hr class="rule" />
+      <div class="field">
+        <label for="title">제목</label>
+        <input type="text" id="title" required maxlength="100" placeholder="알고리즘 1일 1문제" />
+      </div>
+      <div class="field">
+        <label for="description">설명</label>
+        <textarea id="description" rows="2" maxlength="500" placeholder="매일 백준 1문제 인증"></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="depositAmount">보증금 (P)</label>
+          <input type="number" id="depositAmount" required min="1" step="1000" value="10000" />
+        </div>
+        <div class="field">
+          <label for="requiredCount">인증목표 (회)</label>
+          <input type="number" id="requiredCount" required min="1" step="1" value="7" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="startDate">시작일</label>
+          <input type="date" id="startDate" required />
+        </div>
+        <div class="field">
+          <label for="endDate">종료일</label>
+          <input type="date" id="endDate" required />
+        </div>
+      </div>
+      <div class="err-text" id="err"></div>
+      <button class="btn" type="submit" id="submit">발행하기 (개설)</button>
+    </form>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, mountHeader, requireAuth, toast, qs, todayISO } = App;
+    mountHeader();
+    if (!requireAuth()) throw new Error('redirecting');
+
+    const editId = qs('id');
+    const form = document.getElementById('form');
+    const errEl = document.getElementById('err');
+
+    // 기본 날짜
+    document.getElementById('startDate').value = todayISO();
+
+    async function initEdit() {
+      if (!editId) return;
+      document.getElementById('head').textContent = '※ 영수증 수정';
+      document.getElementById('submit').textContent = '수정하기';
+      try {
+        const c = await api.get('/api/challenges/' + editId);
+        document.getElementById('title').value = c.title || '';
+        document.getElementById('description').value = c.description || '';
+        document.getElementById('depositAmount').value = c.depositAmount;
+        document.getElementById('requiredCount').value = c.requiredCount;
+        document.getElementById('startDate').value = App.fmtDate(c.startDate);
+        document.getElementById('endDate').value = App.fmtDate(c.endDate);
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.textContent = '';
+      const body = {
+        title: document.getElementById('title').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        depositAmount: Number(document.getElementById('depositAmount').value),
+        requiredCount: Number(document.getElementById('requiredCount').value),
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+      };
+      // 클라 검증
+      if (!body.title) return (errEl.textContent = '제목을 입력하세요.');
+      if (!(body.depositAmount > 0)) return (errEl.textContent = '보증금은 1 이상이어야 합니다.');
+      if (!(body.requiredCount >= 1)) return (errEl.textContent = '인증목표는 1회 이상이어야 합니다.');
+      if (!body.startDate || !body.endDate) return (errEl.textContent = '기간을 입력하세요.');
+      if (body.endDate < body.startDate) return (errEl.textContent = '종료일이 시작일보다 빠를 수 없습니다.');
+
+      const btn = document.getElementById('submit');
+      btn.disabled = true;
+      try {
+        let newId;
+        if (editId) { body.id = Number(editId); await api.put('/api/challenges', body); newId = editId; }
+        else { newId = await api.post('/api/challenges', body); }
+        toast(editId ? '수정 완료' : '챌린지 개설 완료', 'ok');
+        location.href = '/challenge/detail.html?id=' + newId;
+      } catch (ex) {
+        errEl.textContent = ex.message;
+        btn.disabled = false;
+      }
+    });
+
+    initEdit();
+  </script>
+</body>
+</html>
