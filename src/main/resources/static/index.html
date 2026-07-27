@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>챌린지 메이트</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="챌린지 메이트 홈">
+        <span class="brand-mark">CM</span>
+        <span>
+          <strong>챌린지 메이트</strong>
+          <small>보증금 기반 목표 달성</small>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="주요 메뉴">
+        <button class="nav-item active" data-view="dashboard" type="button">대시보드</button>
+        <button class="nav-item" data-view="explore" type="button">챌린지 찾기</button>
+        <button class="nav-item" data-view="mine" type="button">내 챌린지</button>
+        <button class="nav-item" data-view="points" type="button">포인트</button>
+      </nav>
+
+      <div class="account-panel">
+        <div>
+          <span class="muted">로그인 계정</span>
+          <strong id="accountName">방문자</strong>
+          <small id="accountEmail">로그인이 필요합니다</small>
+        </div>
+        <button id="logoutButton" class="ghost-button full hidden" type="button">로그아웃</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">함께 달성하는 목표</p>
+          <h1 id="pageTitle">대시보드</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="ghost-button" data-open-auth type="button">로그인</button>
+          <button class="primary-button" data-open-create type="button">챌린지 개설</button>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="view active">
+        <div class="summary-grid">
+          <article class="metric-card accent-teal">
+            <span>참여 중</span>
+            <strong id="joinedCount">0</strong>
+            <small>진행 중인 내 챌린지</small>
+          </article>
+          <article class="metric-card accent-amber">
+            <span>성공 인증</span>
+            <strong id="successCount">0</strong>
+            <small>누적 인증 성공 수</small>
+          </article>
+          <article class="metric-card accent-blue">
+            <span>포인트 잔액</span>
+            <strong id="pointBalance">-</strong>
+            <small>보증금 참여 가능 금액</small>
+          </article>
+        </div>
+
+        <section class="split">
+          <div>
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">모집 중</p>
+                <h2>바로 참여할 챌린지</h2>
+              </div>
+              <button class="text-button" data-view-link="explore" type="button">전체 보기</button>
+            </div>
+            <div id="featuredChallenges" class="challenge-grid"></div>
+          </div>
+          <aside class="side-panel">
+            <h2>오늘 할 일</h2>
+            <div class="todo-list">
+              <label><input type="checkbox"> 진행 중인 챌린지 인증 올리기</label>
+              <label><input type="checkbox"> 다른 참여자의 인증 확인하기</label>
+              <label><input type="checkbox"> 새 목표를 보증금과 함께 예약하기</label>
+            </div>
+          </aside>
+        </section>
+      </section>
+
+      <section id="exploreView" class="view">
+        <div class="toolbar">
+          <label class="search-box">
+            <span>검색</span>
+            <input id="challengeSearch" type="search" placeholder="제목 또는 설명">
+          </label>
+          <label>
+            <span>상태</span>
+            <select id="statusFilter">
+              <option value="">전체</option>
+              <option value="RECRUITING">모집 중</option>
+              <option value="ONGOING">진행 중</option>
+              <option value="CLOSED">종료</option>
+            </select>
+          </label>
+          <button id="refreshChallenges" class="ghost-button" type="button">새로고침</button>
+        </div>
+        <div id="challengeList" class="challenge-grid paged-grid"></div>
+        <nav id="challengePagination" class="pagination" aria-label="챌린지 목록 페이지"></nav>
+      </section>
+
+      <section id="mineView" class="view">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">내 참여 현황</p>
+            <h2>참여한 챌린지</h2>
+          </div>
+          <button id="refreshMine" class="ghost-button" type="button">불러오기</button>
+        </div>
+        <div id="myChallengeList" class="my-list"></div>
+      </section>
+
+      <section id="pointsView" class="view">
+        <div class="points-layout">
+          <form id="pointForm" class="form-panel">
+            <h2>포인트 관리</h2>
+            <p class="muted">보증금으로 사용할 포인트를 충전하거나 회수합니다.</p>
+            <label>
+              <span>금액</span>
+              <input name="amount" type="number" min="1000" step="1000" value="10000" required>
+            </label>
+            <div class="button-row">
+              <button class="primary-button" data-point-action="charge" type="submit">충전</button>
+              <button class="ghost-button" data-point-action="withdraw" type="submit">차감</button>
+            </div>
+          </form>
+          <section>
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">거래 내역</p>
+                <h2>최근 포인트 흐름</h2>
+              </div>
+              <button id="refreshPoints" class="ghost-button" type="button">갱신</button>
+            </div>
+            <div id="pointHistory" class="history-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="authDialog" class="dialog">
+    <form method="dialog" class="dialog-card" id="authForm">
+      <button class="icon-button close-button" data-close-dialog aria-label="닫기" type="button">×</button>
+      <h2>계정 시작하기</h2>
+      <div class="segmented" role="tablist" aria-label="인증 방식">
+        <button class="active" data-auth-mode="login" type="button">로그인</button>
+        <button data-auth-mode="register" type="button">회원가입</button>
+      </div>
+      <label id="nameField" class="hidden">
+        <span>이름</span>
+        <input name="name" autocomplete="name">
+      </label>
+      <label>
+        <span>이메일</span>
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label>
+        <span>비밀번호</span>
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button id="authSubmit" class="primary-button full" type="submit">로그인</button>
+    </form>
+  </dialog>
+
+  <dialog id="createDialog" class="dialog">
+    <form method="dialog" class="dialog-card wide" id="challengeForm">
+      <button class="icon-button close-button" data-close-dialog aria-label="닫기" type="button">×</button>
+      <h2>챌린지 개설</h2>
+      <div class="form-grid">
+        <label class="span-2">
+          <span>제목</span>
+          <input name="title" maxlength="80" required placeholder="예: 매일 30분 걷기">
+        </label>
+        <label>
+          <span>보증금</span>
+          <input name="depositAmount" type="number" min="0" step="1000" value="10000" required>
+        </label>
+        <label>
+          <span>필요 인증 수</span>
+          <input name="requiredCount" type="number" min="1" value="5" required>
+        </label>
+        <label>
+          <span>시작일</span>
+          <input name="startDate" type="date" required>
+        </label>
+        <label>
+          <span>종료일</span>
+          <input name="endDate" type="date" required>
+        </label>
+        <label class="span-2">
+          <span>설명</span>
+          <textarea name="description" rows="4" placeholder="인증 방식과 목표를 알려주세요."></textarea>
+        </label>
+      </div>
+      <button class="primary-button full" type="submit">개설하기</button>
+    </form>
+  </dialog>
+
+  <dialog id="detailDialog" class="dialog">
+    <div class="dialog-card wide">
+      <button class="icon-button close-button" data-close-detail aria-label="닫기" type="button">×</button>
+      <div id="challengeDetail"></div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/assets/js/app.js" defer></script>
+</body>
+</html>
