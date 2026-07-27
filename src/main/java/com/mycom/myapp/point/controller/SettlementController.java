@@ -91,12 +91,13 @@ public class SettlementController {
 		User user = userRepository.findById(userId)
 				.orElseThrow(() -> new UserNotFoundException(userId));
 		
-		int settlementAmount = settlementService.getSettlementAmount(challengeId);
-		
+		// 로그인 유저 본인의 정산 net (환불+보상−몰수). 챌린지 전체합이 아니라 유저별.
+		int myNet = settlementService.getUserSettlementNet(userId, challengeId);
+
 		SettlementResultResponseDto response = SettlementResultResponseDto.builder()
 				.userId(userId)
 				.challengeId(challengeId)
-				.amount(settlementAmount)
+				.amount(myNet)
 				.balanceAfter(user.getPointBalance())
 				.build();
 		return ResultDto.success(response);

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.mycom.myapp.challenge.domain.ChallengeStatus;
+import com.mycom.myapp.challenge.domain.SettlementStatus;
 import com.mycom.myapp.challenge.dto.ChallengeDto;
 import com.mycom.myapp.challenge.dto.ChallengeSearchConditionDto;
 import com.mycom.myapp.challenge.entity.Challenge;
@@ -29,6 +30,7 @@ import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
 import com.mycom.myapp.common.exception.NotChallengeHostException;
 import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
+import com.mycom.myapp.point.service.SettlementService;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
 
@@ -45,6 +47,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 	private final ParticipationRepository participationRepository;
 	
 	private final ParticipationService participationService;
+	private final SettlementService settlementService;		// 삭제 시 보증금 환불용
 
 	// 우선 status 필터링만
 	@Override
@@ -229,6 +232,12 @@ public class ChallengeServiceImpl implements ChallengeService {
 		Participation hostParticipation = participationRepository
 				.findByChallenge_IdAndUser_UserId(challengeId, userId)
 				.orElseThrow(ParticipationNotFoundException::new);
+
+		// 참여(JOINED)+미정산이면 개설자 보증금 잠금 해제(환불) 후 취소
+		if (hostParticipation.getStatus() == ParticipationStatus.JOINED
+				&& challenge.getSettlementStatus() != SettlementStatus.SETTLED) {
+			settlementService.refund(userId, hostParticipation.getId(), challenge.getDepositAmount());
+		}
 		hostParticipation.cancel();
 		// 부모 챌린지 논리 삭제
 		challenge.delete();

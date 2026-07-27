@@ -25,7 +25,21 @@ public interface PointHistoryRepository extends JpaRepository<PointHistory, Long
 			   AND ph.type IN :types
 			""")
 	Integer sumAmountByParticipation_Challenge_IdAndTypeIn(
-            @Param("challengeId") Long challengeId, 
+            @Param("challengeId") Long challengeId,
             @Param("types") List<PointType> types
     );
+
+	// 특정 회원의 특정 챌린지 정산 금액 합계 (유저별 net 계산용)
+	@Query("""
+			SELECT COALESCE(SUM(ph.amount), 0)
+			  FROM PointHistory ph
+			 WHERE ph.user.userId = :userId
+			   AND ph.participation.challenge.id = :challengeId
+			   AND ph.type IN :types
+			""")
+	Integer sumAmountByUserAndChallengeAndTypeIn(
+			@Param("userId") Long userId,
+			@Param("challengeId") Long challengeId,
+			@Param("types") List<PointType> types
+	);
 }

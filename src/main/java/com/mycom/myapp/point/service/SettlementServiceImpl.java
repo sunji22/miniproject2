@@ -265,6 +265,17 @@ public class SettlementServiceImpl implements SettlementService {
 		return (amount != null) ? amount : 0;
 	}
 
+	// #6-1. 유저별 정산 net = (환불 + 보상) − 몰수. amount 는 전 타입 양수 저장이라 부호를 직접 계산.
+	@Override
+	@Transactional(readOnly = true)
+	public int getUserSettlementNet(Long userId, Long challengeId) {
+		Integer plus = pointHistoryRepository.sumAmountByUserAndChallengeAndTypeIn(
+				userId, challengeId, List.of(PointType.DEPOSIT_REFUND, PointType.REWARD));
+		Integer minus = pointHistoryRepository.sumAmountByUserAndChallengeAndTypeIn(
+				userId, challengeId, List.of(PointType.PENALTY));
+		return (plus != null ? plus : 0) - (minus != null ? minus : 0);
+	}
+
 	// #7. 정산 미리 보기 (읽기만 가능 - DB 변경 X)
 	@Override
 	@Transactional(readOnly=true)
