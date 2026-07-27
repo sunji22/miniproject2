@@ -4,7 +4,7 @@ public enum ParticipationStatus {
 	JOINED("참여중"),
 	SUCCESS("성공"),
 	FAILED("실패"),
-	CANCLED("취소됨");
+	CANCELED("취소됨");
 	
 	private final String description;
 

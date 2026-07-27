@@ -62,7 +62,7 @@ public class ParticipationServiceImpl implements ParticipationService{
 		if(optionalParticipation.isPresent()) {
 			Participation existingParticipation = optionalParticipation.get();
 	        // 취소했던 참여가 아니면 중복 예외 발생
-	        if (existingParticipation.getStatus() != ParticipationStatus.CANCLED) {
+	        if (existingParticipation.getStatus() != ParticipationStatus.CANCELED) {
 	            log.warn("[참여 실패] 이미 참여 중인 챌린지 - challengeId: {}, userId: {}", challengeId, userId);
 	            throw new DuplicateParticipationException();
 	        }
