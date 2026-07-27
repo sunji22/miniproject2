@@ -7,7 +7,8 @@ import java.util.Arrays;
 public enum ChallengeStatus {
     RECRUITING("모집중"),
     ONGOING("진행중"),
-    CLOSED("종료됨");
+    CLOSED("종료됨"),
+	DELETED("삭제됨");
 
     private final String description;
 

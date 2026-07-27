@@ -1,6 +1,5 @@
 package com.mycom.myapp.challenge.service;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +7,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +27,7 @@ import com.mycom.myapp.common.exception.ExceededRequiredCountException;
 import com.mycom.myapp.common.exception.InvalidChallengePeriodException;
 import com.mycom.myapp.common.exception.InvalidChallengeStatusException;
 import com.mycom.myapp.common.exception.NotChallengeHostException;
+import com.mycom.myapp.common.exception.ParticipationNotFoundException;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.user.entity.User;
 import com.mycom.myapp.user.repository.UserRepository;
@@ -49,15 +50,20 @@ public class ChallengeServiceImpl implements ChallengeService {
 	@Override
 	public List<ChallengeDto> listChallenge(ChallengeSearchConditionDto conditionDto) {
 		
-		Pageable pageable = PageRequest.of(conditionDto.getPage(), conditionDto.getSize());
+		Pageable pageable = PageRequest.of(
+				conditionDto.getPage(), 
+				conditionDto.getSize(),
+				// 기본 정렬: 최신순
+				Sort.by(Sort.Direction.DESC, "createdAt")
+		);
 		Page<Challenge> page = null;
 		
 		// status 조건 있으면
 		if(conditionDto.getStatus() != null) {
-			page = challengeRepository.findByStatusOrderByCreatedAt(conditionDto.getStatus(), pageable);
+			page = challengeRepository.findByStatus(conditionDto.getStatus(), pageable);
 		// status 없으면 전체 조회
 		} else {
-			page = challengeRepository.findAll(pageable);
+			page = challengeRepository.findByStatusNot(ChallengeStatus.DELETED, pageable);
 		}
 		
 		List<ChallengeDto> challengeDtoList = new ArrayList<>();
@@ -73,7 +79,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 	// 상세 조회
 	@Override
 	public ChallengeDto detailChallenge(Long id, Long userId) {
-		Challenge challenge = challengeRepository.findById(id)
+		// DELETED 상태이면 404 NotFound 
+		Challenge challenge = challengeRepository.findByIdAndStatusNot(id, ChallengeStatus.DELETED)
 									.orElseThrow(() -> new ChallengeNotFoundException(id));
 		ChallengeDto challengeDto = ChallengeDto.from(challenge);
 		
@@ -134,6 +141,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 		 * 1. required_count(최소인증횟수) 가 전체 기간보다 큰 경우
 		 * 2. 해당 요청자가 원래의 작성자(host_id) 인지
 		 * 3. 이미 진행 중인 챌린지는 수정 불가
+		 * 4. 참여자가 1명이라도 있으면, 수정 필드를 제한 (핵심 정보 수정 불가)
 		 */
 		// Bad Request
 		if(challengeDto.getId() == null) {
@@ -161,7 +169,23 @@ public class ChallengeServiceImpl implements ChallengeService {
 			throw new InvalidChallengeStatusException();
 		}
 		
+		// (검증4) 주최자를 제외한 참여자가 1명이라도 있는 경우 핵심 조건(보증금, 일정, 인증 횟수) 수정 제한
+		boolean hasOtherParticipants = participationRepository
+				.existsByChallenge_IdAndUser_UserIdNotAndStatus(challenge.getId(), userId, ParticipationStatus.JOINED);
+
+		if (hasOtherParticipants) {
+			boolean isKeyFieldModified = ( challenge.getDepositAmount() != challengeDto.getDepositAmount() )
+					|| ( challenge.getRequiredCount() != challengeDto.getRequiredCount() )
+					|| !challenge.getStartDate().equals(challengeDto.getStartDate())
+					|| !challenge.getEndDate().equals(challengeDto.getEndDate());
+
+			if (isKeyFieldModified) {
+				throw new CannotDeleteOngoingChallengeException("참여자가 존재하는 챌린지는 핵심 조건(보증금, 일정, 인증 횟수)을 수정할 수 없습니다.");
+			}
+		}
+		
 		log.info("업데이트 전: {}", challenge.getTitle());
+		
 		// Dirty Checking
 		challenge.setTitle(challengeDto.getTitle());
 		challenge.setDescription(challengeDto.getDescription());
@@ -169,6 +193,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 		challenge.setRequiredCount(challengeDto.getRequiredCount());
 		challenge.setStartDate(challengeDto.getStartDate());
 		challenge.setEndDate(challengeDto.getEndDate());
+		
 		log.info("업데이트 후: {}", challenge.getTitle());
 				
 		return challenge.getId();
@@ -180,23 +205,35 @@ public class ChallengeServiceImpl implements ChallengeService {
 		Challenge challenge = challengeRepository
 								.findById(challengeId)
 								.orElseThrow(() -> new ChallengeNotFoundException(challengeId));
-		// 요청자=작성자 검증
+		// (검증1) 요청자=작성자
 		Long hostId = challenge.getHost().getUserId();
 		if(!userId.equals(hostId)) { // userId=요청자
 			throw new NotChallengeHostException();
 		}
 		
-		// 검증 : 진행중 챌린지 삭제 불가
+		// (검증2) 진행중 챌린지 삭제 불가
 		if(challenge.getStatus() == ChallengeStatus.ONGOING) {
 			throw new CannotDeleteOngoingChallengeException();
 		}
 		
-		// 삭제 시 필요한 추가적인 비즈니스 로직
-		// ...
+		// (검증3) 주최자 외의 참여자가 있으면 삭제 불가능
+		boolean hasOtherParticipants = participationRepository
+				.existsByChallenge_IdAndUser_UserIdNotAndStatus(challengeId, userId, ParticipationStatus.JOINED);
+		if (hasOtherParticipants) {
+			throw new CannotDeleteOngoingChallengeException("다른 참여자가 존재하여 챌린지를 삭제할 수 없습니다.");
+		}
 		
-		challengeRepository.delete(challenge);
+		// 주최자 외의 참여자가 없으면 삭제
 		
-		//return ResultDto.success();
+		// 자식 테이블 먼저 논리 삭제
+		Participation hostParticipation = participationRepository
+				.findByChallenge_IdAndUser_UserId(challengeId, userId)
+				.orElseThrow(ParticipationNotFoundException::new);
+		hostParticipation.cancel();
+		// 부모 챌린지 논리 삭제
+		challenge.delete();
+		
+		log.info("챌린지 {} 삭제", challenge.getId());
 	}
 	
 	// 타 도메인에서 사용할 '유효성 검증이 완료된 Challenge 엔티티 반환 메소드'
