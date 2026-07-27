@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>챌린지 상세 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap center-col" style="padding-top:24px">
+    <div id="root" class="stack" style="width:var(--receipt-w);max-width:92vw"></div>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, won, agoText, fmtDate, statusStamp, PARTICIPATION_STATUS,
+            mountHeader, session, toast, qs, printIn } = App;
+    const id = qs('id');
+
+    async function load() {
+      const root = document.getElementById('root');
+      root.innerHTML = '';
+      if (!id) { root.innerHTML = '<div class="empty">잘못된 접근입니다.</div>'; return; }
+      let c;
+      try {
+        c = await api.get('/api/challenges/' + id);
+      } catch (e) { root.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+
+      const joined = c.participationId != null;         // 뷰어 참여 여부
+
+      const receipt = el(`
+        <article class="receipt">
+          <div class="receipt__head">${esc(c.title)}<span class="receipt__no">#CH-${String(c.id).padStart(4,'0')}</span></div>
+          <div style="text-align:center;margin:4px 0">${statusStamp(c.status)}</div>
+          <div class="receipt__sub">${esc(agoText(c.endDate))}</div>
+          <hr class="rule" />
+          ${c.description ? `<p class="muted">${esc(c.description)}</p><hr class="rule" />` : ''}
+          <div class="li"><span class="li__label">보증금</span><span class="li__dots"></span><span class="li__val">${won(c.depositAmount)}</span></div>
+          <div class="li"><span class="li__label">인증목표</span><span class="li__dots"></span><span class="li__val">${c.requiredCount} 회</span></div>
+          <div class="li"><span class="li__label">기간</span><span class="li__dots"></span><span class="li__val">${fmtDate(c.startDate)} ~ ${fmtDate(c.endDate)}</span></div>
+          <hr class="rule" />
+          <div style="font-weight:700;margin-bottom:6px">참여자</div>
+          <ul class="plist" id="participants"><li class="muted">불러오는 중…</li></ul>
+          <div class="actions" id="actions"></div>
+        </article>`);
+      root.appendChild(receipt);
+      printIn(receipt);
+
+      renderActions(receipt.querySelector('#actions'), c, joined);
+      const pul = receipt.querySelector('#participants');
+      if (session.isAuthed) loadParticipants(pul, c);
+      else pul.innerHTML = '<li class="muted">로그인하면 참여자를 볼 수 있습니다.</li>';
+    }
+
+    function renderActions(host, c, joined) {
+      host.innerHTML = '';
+      if (!session.isAuthed) {
+        host.appendChild(el(`<a class="btn" href="/auth/login.html?redirect=${encodeURIComponent(location.pathname+location.search)}">로그인하고 참여</a>`));
+        return;
+      }
+      // 참여 (모집중 && 미참여) — 비-RECRUITING 참여는 백엔드 500이라 버튼 자체를 숨김
+      if (c.status === 'RECRUITING' && !joined) {
+        const btn = el('<button class="btn">참여하기 · 보증금 걸기</button>');
+        btn.onclick = () => join(c);
+        host.appendChild(btn);
+      }
+      // 인증글/정산은 참여자에게만 노출 (미참여·종료 열람 시 불필요 + 백엔드도 참여자만 허용)
+      if (joined) {
+        host.appendChild(el(`<a class="btn" href="/challenge/verify.html?challengeId=${c.id}">오늘 인증하기</a>`));
+        host.appendChild(el(`<a class="btn btn--ghost" href="/challenge/verify-list.html?challengeId=${c.id}">인증글 보기</a>`));
+        host.appendChild(el(`<a class="btn btn--ghost" href="/point/settle.html?challengeId=${c.id}">정산 예정서</a>`));
+      }
+
+      // 개설자(host) 전용 액션
+      if (session.userId != null && c.hostId === session.userId) {
+        host.appendChild(el(`<a class="btn btn--ghost" href="/challenge/create.html?id=${c.id}">수정</a>`));
+        const del = el('<button class="btn btn--danger">삭제</button>');
+        del.onclick = () => remove(c);
+        host.appendChild(del);
+      }
+    }
+
+    async function remove(c) {
+      if (!confirm('이 챌린지를 삭제할까요?')) return;
+      try {
+        await api.del('/api/challenges/' + c.id);
+        toast('삭제 완료', 'ok');
+        location.href = '/';
+      } catch (e) {
+        toast(e.status === 409 ? '진행중인 챌린지는 삭제할 수 없습니다.' : e.message, 'err');
+      }
+    }
+
+    async function join(c) {
+      if (!confirm(`보증금 ${won(c.depositAmount)}을(를) 걸고 참여합니다. 계속할까요?`)) return;
+      try {
+        await api.post(`/api/challenges/${c.id}/participations`, null);
+        toast('참여 완료 · 보증금 잠금', 'ok');
+        load();
+      } catch (e) {
+        toast(e.status === 500 ? '지금은 참여할 수 없는 챌린지입니다.' : e.message, 'err');
+      }
+    }
+
+    async function loadParticipants(ul, c) {
+      try {
+        const list = await api.get(`/api/challenges/${c.id}/participations`);
+        ul.innerHTML = '';
+        if (!list || list.length === 0) { ul.innerHTML = '<li class="muted">아직 참여자가 없습니다.</li>'; return; }
+        list.forEach((p) => {
+          ul.appendChild(el(`
+            <li>
+              <span class="who">${esc(p.userName)}</span>
+              <span class="mono muted">${p.successCount}/${c.requiredCount}회</span>
+              ${statusStamp(p.status, PARTICIPATION_STATUS)}
+            </li>`));
+        });
+      } catch (e) {
+        ul.innerHTML = `<li class="muted">${esc(e.message)}</li>`;
+      }
+    }
+
+    mountHeader();
+    load();
+  </script>
+</body>
+</html>

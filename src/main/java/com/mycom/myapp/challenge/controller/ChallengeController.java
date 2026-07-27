@@ -20,6 +20,7 @@ import com.mycom.myapp.challenge.dto.ParticipantResponseDto;
 import com.mycom.myapp.challenge.service.ChallengeService;
 import com.mycom.myapp.challenge.service.ParticipationService;
 import com.mycom.myapp.common.ResultDto;
+import com.mycom.myapp.config.MyUserDetails;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,8 +52,10 @@ public class ChallengeController {
 	@GetMapping("/{id}")
 	public ResultDto<ChallengeDto> detailChallenge(
 				@PathVariable("id") Long id,
-				@AuthenticationPrincipal(expression = "id") Long userId
+				// 공개 조회: 비로그인(anonymous)일 때 null 허용 주입 후 직접 분기
+				@AuthenticationPrincipal MyUserDetails userDetails
 			) {
+		Long userId = (userDetails != null) ? userDetails.getId() : null;
 		ChallengeDto challengeDto = challengeService.detailChallenge(id, userId);
 		return ResultDto.success(challengeDto);
 	}

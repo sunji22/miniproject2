@@ -71,6 +71,7 @@ public class LoginServiceImpl implements LoginService {
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .userId(principal.getId())
                 .email(principal.getEmail())
                 .name(principal.getName())
                 .role(role)

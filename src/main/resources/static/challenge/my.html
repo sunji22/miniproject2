@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 챌린지 — 보증금 챌린지</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/receipt.css" />
+</head>
+<body>
+  <header class="appbar" id="appbar"></header>
+  <main class="wrap" style="padding-top:16px">
+    <h1 class="page-title">내 챌린지</h1>
+    <div class="stack" id="list" style="max-width:520px;margin:16px auto"></div>
+    <div class="empty" id="empty" style="display:none">참여한 챌린지가 없습니다. <a href="/">챌린지 둘러보기 ›</a></div>
+  </main>
+
+  <script src="/assets/js/common.js"></script>
+  <script>
+    const { api, el, esc, statusStamp, PARTICIPATION_STATUS, mountHeader, requireAuth, toast } = App;
+    mountHeader('/challenge/my.html');
+    if (!requireAuth()) throw new Error('redirecting');
+
+    async function load() {
+      const listEl = document.getElementById('list');
+      const emptyEl = document.getElementById('empty');
+      listEl.innerHTML = ''; emptyEl.style.display = 'none';
+      try {
+        const items = await api.get('/api/challenges/my/participations');
+        if (!items || items.length === 0) { emptyEl.style.display = 'block'; return; }
+        items.forEach((p) => listEl.appendChild(row(p)));
+      } catch (e) { toast(e.message, 'err'); }
+    }
+
+    function row(p) {
+      const cid = p.challengeId;
+      const node = el(`
+        <article class="receipt receipt--wide" style="width:100%">
+          <div style="display:flex;align-items:center;gap:10px">
+            <strong>${esc(p.challengeTitle)}</strong>
+            <div class="appbar__spacer"></div>
+            ${statusStamp(p.myStatus, PARTICIPATION_STATUS)}
+          </div>
+          <div class="mono muted" style="margin:6px 0">성공 ${p.successCount}회</div>
+          <div class="actions">
+            <a class="btn btn--sm btn--ghost" href="/challenge/detail.html?id=${cid}">상세</a>
+            <a class="btn btn--sm btn--ghost" href="/challenge/verify.html?challengeId=${cid}">인증</a>
+            <a class="btn btn--sm btn--ghost" href="/challenge/verify-list.html?challengeId=${cid}">인증글</a>
+            <a class="btn btn--sm btn--ghost" href="/point/settle.html?challengeId=${cid}">정산</a>
+          </div>
+        </article>`);
+      return node;
+    }
+
+    load();
+  </script>
+</body>
+</html>

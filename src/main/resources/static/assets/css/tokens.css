@@ -1,0 +1,68 @@
+/* ============================================================
+   보증금 챌린지 — 디자인 토큰 (가이드 §1)
+   감열지 영수증 + 게임 하이브리드. 라이트=감열지 화이트 기본, 다크 지원.
+   ============================================================ */
+:root {
+  /* ---- Paper & Ink (thermal) ---- */
+  --paper:        #f7f5ef;
+  --paper-2:      #fffdf7;
+  --paper-edge:   #ece8dd;
+  --ink:          #1a1a17;
+  --ink-soft:     #55524a;
+  --ink-faint:    #9a968b;
+
+  /* ---- Semantic stamps ---- */
+  --success:      #1f7a4d;
+  --danger:       #b5341f;
+  --reward:       #b8860b;
+  --info:         #2c5a8c;
+
+  /* ---- Status (challenge) ---- */
+  --st-recruiting: var(--info);
+  --st-ongoing:    #7a5a1f;
+  --st-closed:     var(--ink-faint);
+
+  /* ---- Geometry ---- */
+  --radius:       2px;
+  --gap:          12px;
+  --receipt-w:    380px;
+  --line:         1px dashed var(--ink-faint);
+  --shadow-paper: 0 1px 0 var(--paper-edge), 0 6px 18px rgba(0,0,0,.08);
+
+  /* ---- Type ---- */
+  --font-body: -apple-system, "Apple SD Gothic Neo", "Pretendard",
+               "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "D2Coding", "Consolas", monospace;
+}
+
+/* 다크 테마: 기본은 라이트(감열지). 헤더 토글이 <html data-theme="dark"> 부여 시 적용. */
+:root[data-theme="dark"] {
+  --paper:      #17161a;
+  --paper-2:    #1e1d22;
+  --paper-edge: #23222a;
+  --ink:        #eae7df;
+  --ink-soft:   #b0ada4;
+  --ink-faint:  #6b6860;
+  --success:    #4bbf83;
+  --danger:     #e5674f;
+  --reward:     #e0b34a;
+  --info:       #6ba0d8;
+  --shadow-paper: 0 1px 0 var(--paper-edge), 0 8px 22px rgba(0,0,0,.5);
+}
+
+/* ---- reset-ish ---- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,.015) 23px 24px),
+    var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 15px;
+  min-height: 100vh;
+}
+a { color: var(--info); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.amount, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(request -> request
                         // 정적 리소스/랜딩 - 로그인 없이 접근
                         .requestMatchers("/", "/index.html", "/assets/**", "/.well-known/**").permitAll()
+                        // 정적 화면(HTML) - 도메인별 폴더. 페이지 접근은 공개, 데이터는 각 API가 인증 통제
+                        .requestMatchers("/auth/**", "/challenge/**", "/point/**").permitAll()
                         // 에러 디스패치 경로
                         .requestMatchers("/error").permitAll()
                         // Swagger UI / OpenAPI 문서 - 로그인 없이 접근(팀 API 테스트)
