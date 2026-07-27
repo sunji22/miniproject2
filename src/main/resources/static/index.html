@@ -46,10 +46,23 @@
         if (status) q.set('status', status);
         const items = await api.get('/api/challenges?' + q.toString());
         if (!items || items.length === 0) { emptyEl.style.display = 'block'; return; }
-        items.forEach((c) => listEl.appendChild(card(c)));
+        sortByDeadline(items).forEach((c) => listEl.appendChild(card(c)));
       } catch (e) {
         toast(e.message, 'err');
       }
+    }
+
+    // 마감 임박 순: 아직 안 끝난 챌린지를 endDate 오름차순(임박 먼저), 이미 종료된 건 맨 뒤
+    function sortByDeadline(items) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const t = (d) => new Date(String(d).slice(0, 10) + 'T00:00:00').getTime();
+      return items.slice().sort((a, b) => {
+        const ea = t(a.endDate), eb = t(b.endDate);
+        const aEnded = ea < today.getTime(), bEnded = eb < today.getTime();
+        if (aEnded !== bEnded) return aEnded ? 1 : -1;   // 종료된 건 뒤로
+        if (aEnded) return eb - ea;                       // 종료된 것끼리는 최근 종료 먼저
+        return ea - eb;                                   // 진행 중은 마감 임박 먼저
+      });
     }
 
     function card(c) {

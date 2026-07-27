@@ -89,7 +89,8 @@
         toast('삭제 완료', 'ok');
         location.href = '/';
       } catch (e) {
-        toast(e.status === 409 ? '진행중인 챌린지는 삭제할 수 없습니다.' : e.message, 'err');
+        // 409 사유가 여러 개(진행중/참여자 존재) → 서버 메시지 그대로 노출
+        toast(e.message, 'err');
       }
     }
 

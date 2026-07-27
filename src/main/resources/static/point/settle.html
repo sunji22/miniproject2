@@ -28,8 +28,33 @@
       let p;
       try {
         p = await api.get('/api/settlements/preview/' + challengeId);
-      } catch (e) { root.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+      } catch (e) {
+        // 이미 정산 완료(409) → 에러 대신 정산완료 뷰
+        if (e.status === 409) { renderSettled(); return; }
+        root.innerHTML = `<div class="empty">${esc(e.message)}</div>`; return;
+      }
       render(p);
+    }
+
+    // 정산 완료(자동정산 포함) 챌린지 뷰
+    async function renderSettled() {
+      const root = document.getElementById('root');
+      let result = null;
+      try { result = await api.get('/api/settlements/result/' + challengeId); } catch (_) {}
+      const receipt = el(`
+        <article class="receipt receipt--wide">
+          <div class="receipt__head">정산 완료<span class="receipt__no">#CH-${String(challengeId).padStart(4,'0')}</span></div>
+          <div style="text-align:center;margin:4px 0"><span class="stamp stamp--settled stamp--big">정산완료</span></div>
+          <hr class="rule" />
+          <p class="muted" style="text-align:center">이 챌린지는 정산이 완료되었습니다.</p>
+          <div id="mynet"></div>
+          <div class="barcode" style="margin-top:14px"></div>
+          <div class="barcode__no">SETTLED</div>
+        </article>`);
+      root.innerHTML = '';
+      root.appendChild(receipt);
+      printIn(receipt);
+      if (result) showMyNet(result);
     }
 
     function participantRow(pt, requiredCount, ended) {
@@ -117,9 +142,8 @@
       try {
         await api.post('/api/settlements/settle/' + p.challengeId, null);
         toast('정산 완료!', 'ok');
-        // 결과 재조회 + 내 net 강조
-        const preview = await api.get('/api/settlements/preview/' + p.challengeId);
-        render(preview, true);
+        // preview 재조회 금지(이미 SETTLED라 409 남) → 가진 데이터로 정산완료 렌더
+        render(p, true);
         try {
           const result = await api.get('/api/settlements/result/' + p.challengeId);
           showMyNet(result);

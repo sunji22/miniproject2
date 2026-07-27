@@ -163,6 +163,7 @@
     RECRUITING: { label: '모집중', cls: 'stamp--recruiting' },
     ONGOING: { label: '진행중', cls: 'stamp--ongoing' },
     CLOSED: { label: '종료', cls: 'stamp--closed' },
+    DELETED: { label: '삭제됨', cls: 'stamp--cancled' },
   };
   const PARTICIPATION_STATUS = {
     JOINED: { label: '참여중', cls: 'stamp--joined' },

@@ -17,7 +17,7 @@
 
   <script src="/assets/js/common.js"></script>
   <script>
-    const { api, el, esc, statusStamp, PARTICIPATION_STATUS, mountHeader, requireAuth, toast } = App;
+    const { api, el, esc, statusStamp, PARTICIPATION_STATUS, mountHeader, requireAuth, toast, session } = App;
     mountHeader('/challenge/my.html');
     if (!requireAuth()) throw new Error('redirecting');
 
@@ -26,14 +26,43 @@
       const emptyEl = document.getElementById('empty');
       listEl.innerHTML = ''; emptyEl.style.display = 'none';
       try {
-        const items = await api.get('/api/challenges/my/participations');
+        // 내 참여 목록 + 전체 챌린지(hostId 매핑용) 동시 조회
+        const [items, all] = await Promise.all([
+          api.get('/api/challenges/my/participations'),
+          api.get('/api/challenges?size=200').catch(() => []),
+        ]);
         if (!items || items.length === 0) { emptyEl.style.display = 'block'; return; }
-        items.forEach((p) => listEl.appendChild(row(p)));
+        const hostMap = {};
+        (all || []).forEach((c) => { hostMap[c.id] = c.hostId; });
+        const recent = (a, b) => new Date(b.joinedAt) - new Date(a.joinedAt);
+        const isInactive = (p) => p.myStatus === 'CANCELED' || p.challengeStatus === 'DELETED';
+        const active = items.filter((p) => !isInactive(p));
+        const inactive = items.filter(isInactive).sort(recent);
+        const hosted = active.filter((p) => hostMap[p.challengeId] === session.userId).sort(recent);
+        const joined = active.filter((p) => hostMap[p.challengeId] !== session.userId).sort(recent);
+        // 구분선 섹션 (최신이 위, 취소·삭제는 맨 밑)
+        section('내가 개설한 챌린지', hosted, listEl);
+        section('참여 중인 챌린지', joined, listEl);
+        section('취소·삭제한 챌린지', inactive, listEl);
       } catch (e) { toast(e.message, 'err'); }
+    }
+
+    function section(title, list, listEl) {
+      if (!list.length) return;
+      listEl.appendChild(el(`<div class="section-head"><span>${title}</span></div>`));
+      list.forEach((p) => listEl.appendChild(row(p)));
     }
 
     function row(p) {
       const cid = p.challengeId;
+      // 취소/삭제(CANCELED)면 인증·인증글·정산 숨기고 상세만
+      const inactive = p.myStatus === 'CANCELED' || p.challengeStatus === 'DELETED';
+      const actions = inactive
+        ? `<a class="btn btn--sm btn--ghost" href="/challenge/detail.html?id=${cid}">상세</a>`
+        : `<a class="btn btn--sm btn--ghost" href="/challenge/detail.html?id=${cid}">상세</a>
+           <a class="btn btn--sm btn--ghost" href="/challenge/verify.html?challengeId=${cid}">인증</a>
+           <a class="btn btn--sm btn--ghost" href="/challenge/verify-list.html?challengeId=${cid}">인증글</a>
+           <a class="btn btn--sm btn--ghost" href="/point/settle.html?challengeId=${cid}">정산</a>`;
       const node = el(`
         <article class="receipt receipt--wide" style="width:100%">
           <div style="display:flex;align-items:center;gap:10px">
@@ -42,12 +71,7 @@
             ${statusStamp(p.myStatus, PARTICIPATION_STATUS)}
           </div>
           <div class="mono muted" style="margin:6px 0">성공 ${p.successCount}회</div>
-          <div class="actions">
-            <a class="btn btn--sm btn--ghost" href="/challenge/detail.html?id=${cid}">상세</a>
-            <a class="btn btn--sm btn--ghost" href="/challenge/verify.html?challengeId=${cid}">인증</a>
-            <a class="btn btn--sm btn--ghost" href="/challenge/verify-list.html?challengeId=${cid}">인증글</a>
-            <a class="btn btn--sm btn--ghost" href="/point/settle.html?challengeId=${cid}">정산</a>
-          </div>
+          <div class="actions">${actions}</div>
         </article>`);
       return node;
     }
