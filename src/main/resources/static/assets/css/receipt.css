@@ -189,6 +189,17 @@
 .toast--ok  { background: var(--success); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; } }
 
+/* ---- Section divider (내 챌린지 개설/참여 구분) ---- */
+.section-head {
+  display: flex; align-items: center; gap: 12px;
+  margin: 24px auto 12px; max-width: 520px;
+  color: var(--ink-soft); font-weight: 700; font-size: 14px; letter-spacing: .04em;
+}
+.section-head:first-child { margin-top: 8px; }
+.section-head::before, .section-head::after {
+  content: ""; flex: 1; border-top: 1px dashed var(--ink-faint);
+}
+
 /* ---- Modal ---- */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 200;

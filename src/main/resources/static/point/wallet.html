@@ -57,12 +57,14 @@
       // amount 는 DB에 항상 양수 저장 → 부호는 type 으로 결정
       const sign = meta.sign || 1;
       const value = sign * Math.abs(h.amount);
+      // 몰수는 보증금이 참여(잠금) 때 이미 빠져서 잔액 변동 없음(기록성)
+      const neutral = h.type === 'PENALTY';
       return el(`
         <li>
           <span class="date">${fmtDate(h.createdAt)}</span>
           <span class="type-badge ${signClass(value)}">${esc(meta.label)}</span>
-          <span class="${signClass(value)}">${signed(value)}</span>
-          <span class="after">▸ ${won(h.balanceAfter)}</span>
+          <span class="${neutral ? 'muted' : signClass(value)}">${signed(value)}</span>
+          <span class="after">▸ ${won(h.balanceAfter)}${neutral ? ' <span class="muted" style="font-size:11px">(잔액변동 없음)</span>' : ''}</span>
         </li>`);
     }
 
