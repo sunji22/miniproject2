@@ -71,6 +71,7 @@ public class SettlementServiceTest {
 		participant3 = userRepository.save(createUser("user3@test.com", "을지문덕", 7000));
 
 		// 챌린지 생성 (보증금 3000, 성공조건 3회)
+		// 정산은 종료된 챌린지에만 가능하므로 기간을 과거로
 		challenge = challengeRepository.save(
 				Challenge.builder()
 						.host(host)
@@ -78,25 +79,29 @@ public class SettlementServiceTest {
 						.description("설명")
 						.depositAmount(3000)
 						.requiredCount(3)
-						.startDate(LocalDate.now())
-						.endDate(LocalDate.now().plusDays(7))
-						.status(ChallengeStatus.RECRUITING)
+						.startDate(LocalDate.now().minusDays(8))
+						.endDate(LocalDate.now().minusDays(1))
+						.status(ChallengeStatus.ONGOING)
 						.settlementStatus(SettlementStatus.PENDING)
 						.createdAt(LocalDateTime.now())
 						.build()
 		);
 
+		// 참여 상태는 전부 JOINED
+		// SUCCESS/FAILED 는 settleChallenge 가 정산하며 찍는 결과
+		// 미리 SUCCESS/FAILED 를 넣으면 정산 대상이 0명이 되어 아무것도 검증X
+
 		// 참여자1: 3회 성공 (성공 조건 충족)
 		p1 = participationRepository.save(
-				new Participation(null, challenge, participant1, 3, ParticipationStatus.SUCCESS, LocalDateTime.now()));
+				new Participation(null, challenge, participant1, 3, ParticipationStatus.JOINED, LocalDateTime.now()));
 
 		// 참여자2: 3회 성공 (성공 조건 충족)
 		p2 = participationRepository.save(
-				new Participation(null, challenge, participant2, 3, ParticipationStatus.SUCCESS, LocalDateTime.now()));
+				new Participation(null, challenge, participant2, 3, ParticipationStatus.JOINED, LocalDateTime.now()));
 
 		// 참여자3: 1회만 (성공 조건 미충족 → 실패)
 		p3 = participationRepository.save(
-				new Participation(null, challenge, participant3, 1, ParticipationStatus.FAILED, LocalDateTime.now()));
+				new Participation(null, challenge, participant3, 1, ParticipationStatus.JOINED, LocalDateTime.now()));
 	}
 
 	// User 생성 헬퍼 메서드 (중복 제거)
@@ -241,9 +246,8 @@ public class SettlementServiceTest {
 	@Test
 	@DisplayName("정산 통합 - 전원 성공")
 	void settleChallenge_success_all() {
-		// 참여자3도 성공으로 변경
+		// 참여자3도 성공 조건을 채우게 변경 (status 는 정산 결과이므로 JOINED 유지)
 		p3.setSuccessCount(3);
-		p3.setStatus(ParticipationStatus.SUCCESS);
 		participationRepository.save(p3);
 
 		// 정산 실행
@@ -268,13 +272,11 @@ public class SettlementServiceTest {
 	@Test
 	@DisplayName("정산 통합 - 전원 실패")
 	void settleChallenge_success_allFail() {
-		// 참여자1,2도 실패로 변경
+		// 참여자1,2도 성공 조건 미달로 변경 (status 는 정산 결과이므로 JOINED 유지)
 		p1.setSuccessCount(1);
-		p1.setStatus(ParticipationStatus.FAILED);
 		participationRepository.save(p1);
 
 		p2.setSuccessCount(1);
-		p2.setStatus(ParticipationStatus.FAILED);
 		participationRepository.save(p2);
 
 		// 정산 실행 → penaltyAll() 호출

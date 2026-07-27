@@ -1,5 +1,6 @@
 package com.mycom.myapp.point.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.Builder;
@@ -10,6 +11,7 @@ import lombok.Data;
 public class SettlementPreviewResponseDto {
 	private Long challengeId;							// 챌린지 id
 	private String challengeTitle;						// 챌린지 제목
+	private LocalDate endDate;							// 챌린지 종료일 (N일 전 종료 표시용)
 	private int depositAmount;							// 보증금 금액
 	private int requiredCount;							// 성공 조건 횟수
 	private int totalParticipants;						// 총 챌린지 참여자 수
@@ -18,6 +20,10 @@ public class SettlementPreviewResponseDto {
 	private int totalPenaltyAmount;						// 실패자 보증금 합계
 	private int rewardPerPerson;						// 성공자 1명당 보상
 	private List<ParticipantPreview> participants;		// 예상 정산 리스트
+
+	// 화면이 [정산하기] 버튼을 어떻게 그릴지 판단하는 힌트
+	private boolean host;								// 조회자가 호스트인가 (버튼 노출 여부)
+	private boolean settleable;							// 지금 정산 실행이 가능한가 (버튼 활성 여부)
 	
 	@Builder
 	@Data

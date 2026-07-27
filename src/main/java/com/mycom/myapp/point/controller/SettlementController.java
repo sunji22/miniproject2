@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mycom.myapp.common.ResultDto;
 import com.mycom.myapp.common.exception.UserNotFoundException;
 import com.mycom.myapp.config.MyUserDetails;
+import com.mycom.myapp.point.dto.SettlementPreviewResponseDto;
 import com.mycom.myapp.point.dto.SettlementRequestDto;
 import com.mycom.myapp.point.dto.SettlementResultResponseDto;
 import com.mycom.myapp.point.service.SettlementService;
@@ -76,6 +77,16 @@ public class SettlementController {
 		return ResultDto.success();
 	}
 	
+	// 예상 정산 미리보기
+	// 조회는 참여자 전원 가능, 실행([정산하기])은 호스트만
+	@GetMapping("/preview/{challengeId}")
+	public ResultDto<SettlementPreviewResponseDto> preview(
+			HttpServletRequest request,
+			@PathVariable("challengeId") Long challengeId){
+		Long userId = getCurrentUserId(request);
+		return ResultDto.success(settlementService.previewSettlement(challengeId, userId));
+	}
+
 	// 정산 실행
 	@PostMapping("/settle/{challengeId}")
 	public ResultDto<Void> settle(
