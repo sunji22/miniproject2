@@ -61,4 +61,9 @@ public class Challenge {
 	@CreationTimestamp
 	@Column(updatable = false, nullable = false) // 생성일 수정 불가
 	private LocalDateTime createdAt;
+	
+	// Soft Delete 비즈니스 메서드
+    public void delete() {
+        this.status = ChallengeStatus.DELETED; // 상태값을 DELETED로 변경
+    }
 }
