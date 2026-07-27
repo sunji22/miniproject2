@@ -105,8 +105,9 @@
     // 실패 → ErrorResponse {message,status} 사용
     const msg = (json && json.message) || `요청 실패 (${res.status})`;
     if (res.status === 401) {
-      // 만료/미인증 → 세션 정리 (호출부에서 로그인 유도)
+      // 만료/미인증 → 세션 정리 + 로그인 필요 모달(토스트 대신)
       session.clear();
+      requireLoginModal();
     }
     throw new ApiError(res.status, msg);
   }
@@ -167,7 +168,8 @@
     JOINED: { label: '참여중', cls: 'stamp--joined' },
     SUCCESS: { label: '성공 ✔', cls: 'stamp--success' },
     FAILED: { label: '실패', cls: 'stamp--failed' },
-    CANCLED: { label: '취소', cls: 'stamp--cancled' }, // 백엔드 enum 오타 유지
+    CANCELED: { label: '취소', cls: 'stamp--cancled' },
+    JOINED_PROGRESS: { label: '진행중', cls: 'stamp--joined' }, // 프론트 전용(정산 프리뷰 미종료 표시)
   };
   const POINT_TYPE = {
     CHARGE: { label: '충전', sign: 1 },
@@ -204,6 +206,30 @@
     setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 2600);
   }
 
+  // ---------- 로그인 필요 모달 ----------
+  let loginModalOpen = false;
+  function requireLoginModal(redirectPath) {
+    if (loginModalOpen) return;
+    loginModalOpen = true;
+    const to = encodeURIComponent(redirectPath || (location.pathname + location.search));
+    const overlay = el(`
+      <div class="modal-overlay">
+        <div class="receipt modal-card" role="dialog" aria-modal="true">
+          <div class="receipt__head">로그인 필요<span class="receipt__no">LOGIN REQUIRED</span></div>
+          <div class="perf">· · · · · · · · · · · · ·</div>
+          <hr class="rule" />
+          <p class="muted" style="text-align:center">이 기능은 로그인이 필요합니다.</p>
+          <div class="actions">
+            <a class="btn" href="/auth/login.html?redirect=${to}">로그인하러 가기</a>
+            <button class="btn btn--ghost" id="modal-close">닫기</button>
+          </div>
+        </div>
+      </div>`);
+    overlay.querySelector('#modal-close').onclick = () => { overlay.remove(); loginModalOpen = false; };
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); loginModalOpen = false; } });
+    document.body.appendChild(overlay);
+  }
+
   // ---------- 프린트 애니메이션 ----------
   function printIn(node) {
     if (!node) return;
@@ -231,11 +257,14 @@
       <div id="appbar-right"></div>`;
 
     const right = host.querySelector('#appbar-right');
-    const themeBtnHtml = `<button class="btn btn--ghost btn--sm" id="theme-btn" title="테마 전환" style="margin-left:8px">${currentTheme() === 'dark' ? '☀ 라이트' : '☾ 다크'}</button>`;
+    const themeBtnHtml = `<button class="btn btn--ghost btn--sm" id="theme-btn" title="테마 전환">${currentTheme() === 'dark' ? '☀ 라이트' : '☾ 다크'}</button>`;
     if (authed) {
-      right.innerHTML = `<span class="wallet-badge" id="wallet-badge">…</span>
+      right.innerHTML = `<div class="appbar__actions">
+        ${session.name ? `<span class="appbar__user">${esc(session.name)} 님</span>` : ''}
+        <a class="wallet-badge" href="/point/wallet.html" id="wallet-badge" title="내 지갑">…</a>
         ${themeBtnHtml}
-        <button class="btn btn--ghost btn--sm" id="logout-btn" style="margin-left:8px">로그아웃</button>`;
+        <button class="btn btn--ghost btn--sm" id="logout-btn">로그아웃</button>
+      </div>`;
       right.querySelector('#logout-btn').onclick = () => { session.clear(); location.href = '/'; };
       // 잔액 배지
       try {
@@ -243,10 +272,13 @@
         right.querySelector('#wallet-badge').textContent = won(b && b.balance);
       } catch (_) {
         const badge = right.querySelector('#wallet-badge');
-        if (badge) badge.textContent = '';
+        if (badge) badge.textContent = '지갑';
       }
     } else {
-      right.innerHTML = `${themeBtnHtml}<a class="btn btn--ghost btn--sm" href="/auth/login.html" style="margin-left:8px">로그인</a>`;
+      right.innerHTML = `<div class="appbar__actions">
+        ${themeBtnHtml}
+        <a class="btn btn--ghost btn--sm" href="/auth/login.html">로그인</a>
+      </div>`;
     }
     const tbtn = right.querySelector('#theme-btn');
     if (tbtn) tbtn.onclick = () => { const t = toggleTheme(); tbtn.textContent = t === 'dark' ? '☀ 라이트' : '☾ 다크'; };
@@ -270,6 +302,6 @@
     won, signed, signClass, fmtDate, fmtDateTime, agoText, todayISO,
     CHALLENGE_STATUS, PARTICIPATION_STATUS, POINT_TYPE, statusStamp,
     el, esc, toast, printIn, mountHeader, requireAuth, qs,
-    currentTheme, toggleTheme, applyTheme,
+    currentTheme, toggleTheme, applyTheme, requireLoginModal,
   };
 })();

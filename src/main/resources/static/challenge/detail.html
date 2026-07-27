@@ -66,12 +66,12 @@
         btn.onclick = () => join(c);
         host.appendChild(btn);
       }
+      // 인증글/정산은 참여자에게만 노출 (미참여·종료 열람 시 불필요 + 백엔드도 참여자만 허용)
       if (joined) {
         host.appendChild(el(`<a class="btn" href="/challenge/verify.html?challengeId=${c.id}">오늘 인증하기</a>`));
+        host.appendChild(el(`<a class="btn btn--ghost" href="/challenge/verify-list.html?challengeId=${c.id}">인증글 보기</a>`));
+        host.appendChild(el(`<a class="btn btn--ghost" href="/point/settle.html?challengeId=${c.id}">정산 예정서</a>`));
       }
-      host.appendChild(el(`<a class="btn btn--ghost" href="/challenge/verify-list.html?challengeId=${c.id}">인증글 보기</a>`));
-      // 정산 프리뷰는 누구나 열람 가능(host만 실행 버튼 노출은 settle 페이지에서 처리)
-      host.appendChild(el(`<a class="btn btn--ghost" href="/point/settle.html?challengeId=${c.id}">정산 예정서</a>`));
 
       // 개설자(host) 전용 액션
       if (session.userId != null && c.hostId === session.userId) {

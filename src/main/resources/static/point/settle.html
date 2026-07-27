@@ -32,10 +32,23 @@
       render(p);
     }
 
-    function participantRow(pt, requiredCount) {
+    function participantRow(pt, requiredCount, ended) {
       // net 은 DTO에 없음 → 클라 계산 (환불 + 보상 − 몰수)
       const net = (pt.refundAmount || 0) + (pt.rewardAmount || 0) - (pt.penaltyAmount || 0);
       const cls = signClass(net);
+      // 아직 종료 전이면 성공/실패 확정 아님 → 진행중 표시(예상 net)
+      if (!ended) {
+        const met = pt.currentSuccessCount >= requiredCount;
+        return `
+          <div class="settle-row">
+            <span class="name">${esc(pt.userName)}
+              <span class="mono muted">${pt.currentSuccessCount}/${requiredCount}회</span>
+              <span class="stamp stamp--joined">진행중</span>
+            </span>
+            <span class="net muted">예상 ${signed(net)}</span>
+            <span class="detail">${met ? '목표 달성 (마감 시 성공 예정)' : `목표까지 ${Math.max(0, requiredCount - pt.currentSuccessCount)}회`}</span>
+          </div>`;
+      }
       const detail = pt.success
         ? `환불 +${won(pt.refundAmount)} · 상금 +${won(pt.rewardAmount)}`
         : `몰수 −${won(pt.penaltyAmount)}`;
@@ -50,9 +63,18 @@
         </div>`;
     }
 
+    // 종료(마감) 여부: endDate 가 오늘 이전
+    function isEnded(endDate) {
+      if (!endDate) return false;
+      const end = new Date(String(endDate).slice(0, 10) + 'T00:00:00');
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      return end < today;
+    }
+
     function render(p, settled) {
       const root = document.getElementById('root');
-      const rows = (p.participants || []).map((pt) => participantRow(pt, p.requiredCount)).join('');
+      const ended = settled || isEnded(p.endDate);
+      const rows = (p.participants || []).map((pt) => participantRow(pt, p.requiredCount, ended)).join('');
       const receipt = el(`
         <article class="receipt receipt--wide">
           <div class="receipt__head">정산 예정서<span class="receipt__no">#CH-${String(p.challengeId).padStart(4,'0')}</span></div>
@@ -60,14 +82,14 @@
             ${settled ? '<span class="stamp stamp--settled stamp--big stamp-pop">정산완료</span>'
                       : '<span class="stamp stamp--closed">정산대기</span>'}
           </div>
-          <div class="receipt__sub">${esc(p.challengeTitle)} · ${fmtDate(p.endDate)} 종료</div>
+          <div class="receipt__sub">${esc(p.challengeTitle)} · ${fmtDate(p.endDate)} ${ended ? '종료' : '종료예정'}</div>
           <hr class="rule" />
           <div class="li"><span class="li__label">보증금</span><span class="li__dots"></span><span class="li__val">${won(p.depositAmount)}</span></div>
           <div class="li"><span class="li__label">인증목표</span><span class="li__dots"></span><span class="li__val">${p.requiredCount} 회</span></div>
-          <div class="li"><span class="li__label">참여 / 성공 / 실패</span><span class="li__dots"></span><span class="li__val">${p.totalParticipants} / ${p.successCount} / ${p.failCount}</span></div>
+          <div class="li"><span class="li__label">참여 / ${ended ? '성공 / 실패' : '달성 / 미달'}</span><span class="li__dots"></span><span class="li__val">${p.totalParticipants} / ${p.successCount} / ${p.failCount}</span></div>
           <hr class="rule" />
-          <div class="li li--total"><span class="li__label neg">몰수 팟</span><span class="li__dots"></span><span class="li__val neg">${won(p.totalPenaltyAmount)}</span></div>
-          <div class="li"><span class="li__label gold">1인 분배</span><span class="li__dots"></span><span class="li__val gold">${won(p.rewardPerPerson)}</span></div>
+          <div class="li li--total"><span class="li__label neg">${ended ? '몰수 팟' : '예상 몰수 팟'}</span><span class="li__dots"></span><span class="li__val neg">${won(p.totalPenaltyAmount)}</span></div>
+          <div class="li"><span class="li__label gold">${ended ? '1인 분배' : '예상 1인 분배'}</span><span class="li__dots"></span><span class="li__val gold">${won(p.rewardPerPerson)}</span></div>
           <hr class="rule rule--solid" />
           <div id="rows">${rows}</div>
           <div id="mynet"></div>

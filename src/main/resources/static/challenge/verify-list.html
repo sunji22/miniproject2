@@ -41,15 +41,22 @@
       } catch (e) { toast(e.message, 'err'); }
     }
 
+    function imageBlock(v) {
+      if (!v.imageUrl) return '<div class="muted" style="font-size:13px">이미지 없음</div>';
+      // 이미지 로드 실패 시 URL 링크로 폴백
+      return `<img class="proof__img" src="${esc(v.imageUrl)}" alt="인증 이미지"
+                onerror="this.outerHTML='<a class=&quot;muted&quot; style=&quot;font-size:12px;word-break:break-all&quot; target=&quot;_blank&quot; href=${esc(v.imageUrl)}>🔗 ${esc(v.imageUrl)}</a>'"/>`;
+    }
+
     function proof(v) {
-      const done = v.checkCount >= v.requiredChecks && v.requiredChecks > 0;
       const node = el(`
         <div class="proof">
           <div class="proof__meta">@${esc(v.userName)} · ${fmtDate(v.verifiedDate)}
             ${v.succeeded ? '<span class="stamp stamp--success" style="margin-left:6px">성공 ✔</span>' : ''}
+            <span class="muted" style="float:right;font-size:12px">자세히 ›</span>
           </div>
-          ${v.imageUrl ? `<img class="proof__img" src="${esc(v.imageUrl)}" alt="인증 이미지" onerror="this.style.display='none'"/>` : ''}
-          <div>${esc(v.content || '')}</div>
+          ${imageBlock(v)}
+          <div style="max-height:3em;overflow:hidden">${esc(v.content || '')}</div>
           <hr class="rule" />
           <div style="display:flex;align-items:center;gap:10px">
             <span class="mono muted">확인 ${v.checkCount}/${v.requiredChecks}명</span>
@@ -59,6 +66,9 @@
             </button>
           </div>
         </div>`);
+      // 카드 클릭(버튼 제외) → 상세 모달
+      node.style.cursor = 'pointer';
+      node.addEventListener('click', (e) => { if (!e.target.closest('button')) openProofModal(v); });
       const btn = node.querySelector('button');
       if (!v.mine && !v.checkedByMe) {
         btn.onclick = async () => {
@@ -75,6 +85,27 @@
       }
       printIn(node);
       return node;
+    }
+
+    function openProofModal(v) {
+      const overlay = el(`
+        <div class="modal-overlay">
+          <article class="receipt modal-card modal-card--wide">
+            <div class="receipt__head">인증 상세<span class="receipt__no">@${esc(v.userName)}</span></div>
+            <div class="receipt__sub">${fmtDate(v.verifiedDate)}
+              ${v.succeeded ? '<span class="stamp stamp--success">성공 ✔</span>' : '<span class="stamp stamp--joined">확인중</span>'}
+            </div>
+            <hr class="rule" />
+            ${imageBlock(v)}
+            <p style="white-space:pre-wrap">${esc(v.content || '(내용 없음)')}</p>
+            <hr class="rule" />
+            <div class="li"><span class="li__label">상호 확인</span><span class="li__dots"></span><span class="li__val">${v.checkCount}/${v.requiredChecks}명</span></div>
+            <div class="actions"><button class="btn btn--ghost" id="pm-close">닫기</button></div>
+          </article>
+        </div>`);
+      overlay.querySelector('#pm-close').onclick = () => overlay.remove();
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
     }
 
     load();

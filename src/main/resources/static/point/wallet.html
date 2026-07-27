@@ -53,12 +53,15 @@
     }
 
     function rowItem(h) {
-      const meta = POINT_TYPE[h.type] || { label: h.type };
+      const meta = POINT_TYPE[h.type] || { label: h.type, sign: 1 };
+      // amount 는 DB에 항상 양수 저장 → 부호는 type 으로 결정
+      const sign = meta.sign || 1;
+      const value = sign * Math.abs(h.amount);
       return el(`
         <li>
           <span class="date">${fmtDate(h.createdAt)}</span>
-          <span class="type-badge ${signClass(h.amount)}">${esc(meta.label)}</span>
-          <span class="${signClass(h.amount)}">${signed(h.amount)}</span>
+          <span class="type-badge ${signClass(value)}">${esc(meta.label)}</span>
+          <span class="${signClass(value)}">${signed(value)}</span>
           <span class="after">▸ ${won(h.balanceAfter)}</span>
         </li>`);
     }
