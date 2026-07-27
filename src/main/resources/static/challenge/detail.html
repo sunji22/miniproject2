@@ -72,6 +72,12 @@
         host.appendChild(el(`<a class="btn btn--ghost" href="/challenge/verify-list.html?challengeId=${c.id}">인증글 보기</a>`));
         host.appendChild(el(`<a class="btn btn--ghost" href="/point/settle.html?challengeId=${c.id}">정산 예정서</a>`));
       }
+      // 참여 취소(나가기) — 모집중(시작 전) && 참여중 && 비-개설자. 시작 후에는 불가, 보증금 환불. (개설자는 '삭제' 사용)
+      if (c.status === 'RECRUITING' && joined && c.hostId !== session.userId) {
+        const leave = el('<button class="btn btn--danger">나가기</button>');
+        leave.onclick = () => cancel(c);
+        host.appendChild(leave);
+      }
 
       // 개설자(host) 전용 액션
       if (session.userId != null && c.hostId === session.userId) {
@@ -102,6 +108,17 @@
         load();
       } catch (e) {
         toast(e.status === 500 ? '지금은 참여할 수 없는 챌린지입니다.' : e.message, 'err');
+      }
+    }
+
+    async function cancel(c) {
+      if (!confirm(`참여를 취소하고 보증금 ${won(c.depositAmount)}을(를) 돌려받습니다. 계속할까요?`)) return;
+      try {
+        await api.del('/api/participations/' + c.participationId);
+        toast('참여 취소 · 보증금 환불', 'ok');
+        load();
+      } catch (e) {
+        toast(e.message, 'err');
       }
     }
 
