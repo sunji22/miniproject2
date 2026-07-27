@@ -232,7 +232,7 @@ class ParticipationServiceIntegrationTest {
 
         // 2. DB에서 해당 참여 엔티티가 실제로 삭제(status=CANCLED)되었는지 검증
         Participation updatedParticipation = participationRepository.findById(targetParticipation.getId()).orElseThrow();
-        assertThat(updatedParticipation.getStatus()).isEqualTo(ParticipationStatus.CANCLED);
+        assertThat(updatedParticipation.getStatus()).isEqualTo(ParticipationStatus.CANCELED);
 
         // 3. 전체 참여자 수가 50명에서 49명으로 감소했는지 및 취소 유저가 목록에서 제외되었는지 검증
         List<ParticipantResponseDto> remainingParticipants = participationService.listParticipant(challenge.getId());
