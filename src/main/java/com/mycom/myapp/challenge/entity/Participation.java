@@ -76,6 +76,6 @@ public class Participation {
     	if (this.status != ParticipationStatus.JOINED) {
             throw new IllegalStateException("참여 중인 챌린지가 아닙니다.");
         }
-    	this.status = ParticipationStatus.CANCLED;
+    	this.status = ParticipationStatus.CANCELED;
     }
 }
